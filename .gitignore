@@ -6,6 +6,8 @@
 *.fls
 *.out
 *.toc
+*.pdf
+build/
 
 ## Intermediate documents:
 *.dvi
