@@ -36,7 +36,7 @@
 \newcommand{\gtick}{\color{ForestGreen} \tick }
 \newcommand{\cross}{$\times$ }
 \newcommand{\rcross}{\color{red} \cross }
-
+\newcommand{\runz}{\textsc{Runz}}
 
 \begin{document}
 % =====================================================================
@@ -127,9 +127,9 @@ I AM THE ABSTRACT
 
 \chapter{Introduction}
 
-Redshifting measurements form the backbone of many cosmological surveys, and in order to turn spectrographic measurements into quantified redshifts, a redshifting program is needed. In this thesis, the legacy redshifting software used by the OzDES cosmology team, RUNZ, is replaced with a new, web-based redshifting application developed specifically for their needs of high redshift and low signal-to-noise algorithms.\\
+Redshifting measurements form the backbone of many cosmological surveys, and in order to turn spectrographic measurements into quantified redshifts, a redshifting program is needed. In this thesis, the legacy redshifting software used by the OzDES cosmology team, \runz{}, is replaced with a new, web-based redshifting application developed specifically for their needs of high redshift and low signal-to-noise algorithms.\\
 
-This report is divided into several sections, with the background and context for redshifting established in Chapter \ref{ch:back} and prior implementations discussed in Chapter \ref{ch:prior}. Those familiar redshifting and prior approaches are recommended to read from Chapter \ref{ch:req} or Chapter \ref{ch:impl}, where program requirements and the implementation results are respectively discussed.
+This report is divided into several sections, with the background and context for redshifting established in Chapter \ref{ch:back} and prior implementations discussed in Chapter \ref{ch:prior}. Those familiar redshifting and prior approaches are recommended to read from Chapter \ref{ch:req} or Chapter \ref{ch:design}, where program requirements and the implementation results are respectively discussed.
 
 
 
@@ -245,28 +245,93 @@ After determining the final redshift, the spectrum is then displayed to the user
 
 \subsection{SDSS DR8 $\chi^2$ fitting}
 
-\subsection{AUTOZ}
+The Sloan Digital Sky Survey (SDSS) has been active since 2000, and latest data release - data release 10, includes spectrographic measurements for over one million objects \cite{SDSSIII}. This review will concentrate on the eighth data release (DR8), in which the redshifting algorithms utilised are discussed more in depth. Prior to DR8, the redshifting algorithms used by the SDSS team included standard cross correlation techniques similar to those of 2dF and RVSAO 2.0, with $\chi^2$ algorithms also available \cite{sdss6}. In DR8, the cross correlation method was removed in favour of the $\chi^2$ fitting, as they gave the same results for approximately 98\% of spectra \cite{aihara2011eighth}.
+
+The $\chi^2$ matching process is simpler than the cross correlation algorithm, and input spectra have a sky mask applied to zero weight skylines, and then, for a range of viable redshifts, the $\chi$ difference for each template in the catalogue is determined, where the $\chi^2$ difference is defined as:
+
+\begin{equation}
+\chi^2_z = \sum_i \left(\frac{t_{iz} - \mu_i}{\sigma_i} \right)^2,
+\end{equation}
+
+where the index $i$ denotes the $i$th data point, $t_iz$ is the value of the template's $i$th point at a shifted redshift of $z$, and $\mu_i$ is the value of the model's $i$th point. As of the eight data release, the redshift increment in each step is 138 km s$^{-1}$, and all galactic templates are checked between a redshift value of $-0.01$ to $1.00$. Whilst this method is certainly mathematically simpler than many alternate algorithms, the reviewer is concerned over the lack of detail given in the examined papers algorithm review about catering for factors such as varying normalisation over redshift ranges.
+
+
+
+\subsection{\textsc{AUTOZ}}
+
+The \textsc{AUTOZ} program written by Ivan Baldry is an IDL based algorithm to provide redshift estimation for the Galaxy and Mass Assembly (GAMA) team \cite{baldry2014galaxy}. In analysis of the matching algorithm, many similar steps to previously reviewed programs are found. \textsc{AUTOZ} applied flux corrections to account for non-uniform spectrographic sensitivity, removes bad data points, subtracts continuum via rejected polynomial fitting and subtraction of a smoothed median filter, apodizes the spectrum with a cosine taper and finally oversamples and rebins the spectrum. This final spectrum is then Fourier Transformed and cross correlated with a range of provided templates, where the highest cross correlation peaks are used to determine the best fitting redshift and template.
+
+Unlike the 2dF program, which allows users to manually verify the automatically determined redshift and then pick their own redshift if unsatisfied, the \textsc{AUTOZ} program provides no interactivity or manual verification of redshifts. Whilst the program does allow a substantial number of input parameters to be specified that effects the matching algorithm, that is the extent of user input. Furthermore, the \textsc{AUTOZ} application is developed for a specific and restricted set of astronomical objects due to the target survey population of the GAMA survey.
 
 \section{Trends and Caveats}
+
+Given that the algorithms reviewed have been arranged in chronological order, it can be seen first off that emission line matching via feature identification has not been used in the more modern implementations. As discussed in the review of RVSAO 2.0, emission line matching has been found to be inferior to cross correlation matching for both high and low signal-to-noise data. Given the suitability of emission line matching mainly to high quality emission type galaxy spectra, this technique would be the least applicable to the low signal-to-noise survey being undertaken by the OzDES team.
+
+When looking at cross correlation techniques, it can be seen that similarities in the matching algorithms of all four reviewed programs indicates that the core methodology has no changed significantly since it was first implemented by Tonry and Davis \cite{tonry1979survey}. The $\chi^2$ method of matching redshifts is only mentioned by the SDSS team, however they found it simple and useful enough to completely remove their cross correlation algorithms in favour of the $\chi^2$ approach. The success of that approach warrants an investigation and implementation of a $\chi^2$ matching algorithm in the thesis project, along with an implementation of a cross correlation based matching algorithm.
+
+
+\section{Current OzDES Approach}
+
+Currently the OzDES team is using legacy software called \textsc{Runz} to perform redshift estimates. This software provides two separate matching algorithms, respectively using cross correlation and feature matching similar to the RVSAO 2.0 software package. Similar to the 2dF software, the user can a manual redshift if unsatisfied with the best automatically determined redshifts. Users can find manual redshifts by virtue of marking spectral features as specific transitions via a simplistic visual interface illustrated in Figure \ref{fig:runz}, and can then perform a tightly constrained  automatic fit to shift the selection to the maximum cross correlation. The OzDES team is seeking replacement software due not only to the low accuracy of the automatic redshifting algorithm in \textsc{Runz}, but also due to the legacy nature of the software, which requires a Linux system to install, various dependencies, C-shell, in addition to a high learning curve. Modifying \textsc{Runz} to address these issues is not possible due to the unfortunate state of the code base after over a decade of revisions and additions. The next chapter will state the requirements of any replacement software in order to address the current disadvantages and issues relating to the installation and use of the current \textsc{Runz} software program.
+
+\begin{figure}[ht!]
+\includegraphics[width=1\textwidth]{images/RunzScreen.PNG} 
+\centering
+\caption{A screenshot of the \runz{} application in use. The four top plots represent detailed callout sections, with the full spectra shown in white in the bottom plot. The perspective template to match to is shown in green in all plots. The red line through the image serves as the cursor for \runz{}, where spectral lines are marked at the current cursor via keyboard shortcuts, which are displayed in a background terminal window to which \runz{} writes its output.}
+\label{fig:dust}
+\end{figure}
+
+
 
 % =====================================================================
 
 \chapter{Requirements}
 \label{ch:req}
 
-Requirements.
-
+Consultation with the OzDES team produced a list of usability and functional requirements that need to be met before the thesis program can be considered a viable replacement for \textsc{Runz}. In this section, these requirements are discussed under the general categories of algorithm matching performance, computational performance, usability and integration features.
 \section{Algorithm Performance}
 
-Has to be better than Runz
+Every night of observation at the AAT can produce four thousand spectra. Each of these spectra needs to be analysed by a member of the OzDES team to ascertain two values: a redshift estimate and a quality of estimate, as represented an integer range from 1 (illegible spectra) up to a quality of 4 (99\% confidence in results). The desired goal for the algorithm matching performance is to be able to agree with manual matching for 90\% of spectra, where the user has selected a quality of matching to be 4, indicating a high quality spectra and defined spectral features. Whilst other surveys and their matching algorithms have managed to attain over 90\% accuracy prior to this thesis, the algorithms developed for OzDES will need to be able to perform under circumstances of much lower signal-to-noise than previous surveys.
+
+The absolute lower bound for accuracy during redshift estimate is to match the performance of the \textsc{Runz} application. Thus, analysis of algorithm performance will necessarily involve comparison to the performance of automatic matching via \textsc{Runz}.
+
+Specifically, performance is looked to be gained in the area of quasar matching, which is a known weakness in prior algorithms and \textsc{Runz}, due to the high redshift estimations and broad features of quasar spectra.
 
 \section{Computational Performance}
 
-Has to run. Time not too much of an issue.
+The software developed needs to be accessible to end users without the aid of dedicated cluster or supercomputer stations. Memory and CPU utilisation of the application should fit within acceptable bounds such that the application can be executed without issue on computer hardware featuring dual core processors and 2GB of RAM. This is a soft goal, in that it is desired by not necessary for software adoption, however great care needs to be taken to ensure that the vast majority of expected users possess the hardware required to run the program without issue.
 
 \section{Usability}
 
-Talk about install problems, updates, making it quick and easy to use. Introduce the novel concept of scientific computing.
+\subsection{Installation}
+
+Given the legacy state of the current OzDES redshift matching software, \textsc{Runz}, initial installation of the software program and its required dependencies is an onerous task, and has taken in some cases over a week of effort before the program was in a usable state. A requirement for adoption by the OzDES would be significant improvements in the installation process. Ideally, installation should be achieved by a self-contained  single-file installation package, with any required dependencies installed either automatically or with minimal fuss.
+
+Whilst cross-platform support is not a requirement for the OzDES team, it would be a desirable feature, as previous applications required a a Mac or Linux distribution.
+
+\subsection{Updating}
+
+In line with the request for minimal maintenance and human intervention, a further goal of this thesis will be to produce software that updates either automatically, or via a simple prompt to the end user. It is expected that at no point in any update process would a user have to manually updated any dependencies, or manually configure or replace program content, such as binary files.
+
+\subsection{Uptake}
+
+A final large issue that effects new users to \textsc{Runz} is the steep learning curve of the program. As briefly mentioned previously, \runz{} features a simple visual interface. This interface consists of cursor tracking, plot rendering and keyboard shortcuts, with none of the modern hallmarks and interactivity the define modern user interfaces. Furthermore, keyboard shortcuts, program output and help text is all displayed in a separate terminal window, creating an unpleasant disjoint between information location and the respective visual detailing of that information on the plots. The lack of modern control schemes and unintuitive segregation of information and visual content makes \runz{} unintuitive for new users, and the OzDES team are looking for an interactive and intuitive user interface in replacement software.
+
+In addition to the usability of the interface in general, \runz{} provides limited screen options, restricting users to viewing a spectrum in full (as shown in Figure \ref{fig:runz}), or to seeing a plot detailing redshifts for all spectrum in the input file. It provides no way to inspect template files by themselves, no options or settings screen, and no overview screen by which to view multiple spectra, either in tabular or graphical format.
+
+\subsection{Retention}
+
+The final usability requirement given by the OzDES team was to ensure that work could not be lost accidentally during the redshifting process. \runz{} achieves this goal via saving results straight to hard disk during redshifting, and similar levels of data retention need to apply for any developed application such that unexpected failure of the application, either through internal exceptions or being accidentally closed by the user, does not result in lost data and having to re-redshift spectra.
+
+
+\section{Integration}
+
+The final requirement for the program is in being able to integrate with the existing systems in place used by the OzDES team. Specifically, the program would need to take inputs of singular observation runs after data reduction, and be able to take data files created by aggregation of multiple observations by the OzDES team. The results produced by the program then need to be a consistent, machine readable format, suitable for easy digestion into a database system.
+
+\chapter{Design Decisions}
+\label{ch:design}
+
+
 
 \chapter{Implementation}
 \label{ch:impl}
