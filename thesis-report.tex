@@ -295,7 +295,7 @@ Every night of observation at the AAT can produce four thousand spectra. Each of
 
 The absolute lower bound for accuracy during redshift estimate is to match the performance of the \textsc{Runz} application. Thus, analysis of algorithm performance will necessarily involve comparison to the performance of automatic matching via \textsc{Runz}.
 
-Specifically, performance is looked to be gained in the area of quasar matching, which is a known weakness in prior algorithms and \textsc{Runz}, due to the high redshift estimations and broad features of quasar spectra.
+Specifically, performance is looked to be gained in the area of quasar matching, which is a known weakness in prior algorithms and \textsc{Runz}, due to the high redshift estimations and broad features of quasar spectra. Generalising this requirement, any developed matching algorithm has to give high performance over a wide variety of traditional and exotic astronomical objects.
 
 \section{Computational Performance}
 
@@ -319,17 +319,126 @@ A final large issue that effects new users to \textsc{Runz} is the steep learnin
 
 In addition to the usability of the interface in general, \runz{} provides limited screen options, restricting users to viewing a spectrum in full (as shown in Figure \ref{fig:runz}), or to seeing a plot detailing redshifts for all spectrum in the input file. It provides no way to inspect template files by themselves, no options or settings screen, and no overview screen by which to view multiple spectra, either in tabular or graphical format.
 
+\subsection{Automation}
+
+Although not a strict requirement, members of the OzDES team have enquired about the potential to automate the program, so that it can be inserted in the data pipeline without hassle. Given that manual data checks will still need to be performed, this requirement is an attempt to reduce time spent gathering relevant data files and waiting for the algorithm to redshift spectra before manually verifying the automatic results. As such, an objective for the algorithm is to match at a speed greater than that of a user manually matching spectra, to ensure that users do not find themselves waiting upon automatic matching to determine a redshift estimate.
+
 \subsection{Retention}
 
 The final usability requirement given by the OzDES team was to ensure that work could not be lost accidentally during the redshifting process. \runz{} achieves this goal via saving results straight to hard disk during redshifting, and similar levels of data retention need to apply for any developed application such that unexpected failure of the application, either through internal exceptions or being accidentally closed by the user, does not result in lost data and having to re-redshift spectra.
+
+
 
 
 \section{Integration}
 
 The final requirement for the program is in being able to integrate with the existing systems in place used by the OzDES team. Specifically, the program would need to take inputs of singular observation runs after data reduction, and be able to take data files created by aggregation of multiple observations by the OzDES team. The results produced by the program then need to be a consistent, machine readable format, suitable for easy digestion into a database system.
 
+
+
 \chapter{Design Decisions}
 \label{ch:design}
+
+The requirements discussed in the previous chapter allow comparison of multiple possible development pathways. In this section, high level design decisions are laid out in terms of their advantages and disadvantages. 
+
+\section{Languages}
+
+\subsection{Python}
+
+Python is a versatile, open-source, high-level programming language that supports the programming paradigms of object-orientated, structured, dynamic, functional and procedural coding \cite{Python}. It is gaining popularity quickly in the astronomical community, with 50\% of respondents to an astrostatistic survey specifying Python as their programming language of choice as of 2014 \cite{PythonPop}.
+
+\subsubsection{Advantages}
+
+\begin{itemize}
+\item \textbf{External Libraries:} The greatest advantage of Python is the abundance of  high quality external python libraries available for academic use. In particular, the Astropy library provides programmers with a massive amount of relevant scientific methods, data analysis tools and data visualisation tools that can enormously simplify workflow processes \cite{astropy}. Other libraries, such as NumPy, focus on bringing speed to Python via wrapping compiled FORTRAN or C++ code in a Python wrapper, aiming to leverage the easy programming of Python with the efficiency of low-level languages \cite{numpy}.
+
+\item \textbf{Platform agnosticism:} Python is available cross platform, and thus a Python implementation would be platform agnostic provided that any external libraries that use precompiled binary wrappers have versions available both unix based operating systems and Windows.
+
+\item \textbf{Readability:} A final advantage of using the Python language is it's readability. Given that it is expected that multiple people will maintain the project and potentially contribute to it in the future, it would be highly beneficial if code written is easy to understand by readers without an in-depth technical background.
+\end{itemize}
+  
+
+\subsubsection{Disadvantages}
+
+\begin{itemize}
+\item \textbf{Dependency Management:} Unfortunately, the large number of available Python libraries can often lead to dependency conflicts, where specific libraries require different versions of Python to work. In addition to this, a Python version chosen for the project would need to be installed onto all user's computers (as Python is interpreted), and some users may be reticent to installing a different version of Python for a single application.
+
+\item \textbf{Advanced User Interface:} Whilst there are dozens of graphical user interface (GUI) libraries written for Python \cite{PythonGUI}, it is often the case that these libraries are platform dependent or require large amounts of code to create interactive interfaces. Given the thesis developer's inexperience with the most modern Python GUI, additional time would have to be devoted to selecting the best library available and learning how to us it.
+
+\item \textbf{Updating:} Automatic updating would be difficult with a Python application in the circumstance of attempting to upgrade dependencies. As users may be utilising application dependencies for other projects, it is impermissible to update dependencies without notifying the user. In the case where other programs require a different version of an external library, unless the user decides to create a new Python installation, they cannot update the project.
+
+\end{itemize}
+
+\subsubsection{Verdict}
+
+Despite the issues relating to external dependencies and unfamiliarity with developing Python user interfaces, the fantastic libraries available make Python a promising pathway to consider.
+
+
+\subsection{C++}
+
+C++ is a low-level, compiled programming language that is known for library support and high-speed execution \cite{cpp}.
+
+\subsubsection{Advantages}
+\begin{itemize}
+
+\item \textbf{Speed:} Given that C++ is a low-level, compiled language, its execution speed is significantly faster than interpreted languages like Python. Given the numerical complexity and large data sizes found in many astronomical tasks, the speed of C++ can be required for high performance domains. Whilst this is obviously a boon in any circumstance, it should be noted that this project does not strictly posses an efficient high-performance computing requirement, and that many libraries in Python (such as NumPy) to some extent negate the speed benefit of C++.
+
+\item \textbf{Maturity:} C++ is a mature ISO-standard language, and thus code written for C++ is highly likely to remain standards compliant over future revisions. As a counter example to this, consider the fragmentation in the Python code base which is split between versions 2.7.8 and 3.4.1 due to large code changes \cite{pythonDownload}.
+\end{itemize}
+
+\subsubsection{Disadvantages}
+\begin{itemize}
+
+\item \textbf{Fewer Modern Libraries:} Given the low popularity of C++ in astronomy, regularly updated and comprehensive libraries are few and far to be found. Whilst general scientific and signal processing libraries exist, the list of high quality C++ libraries pertaining to astronomy libraries is not as comprehensive as available in Python. In addition, many C++ libraries are platform dependent, locking down platform choices.
+
+\end{itemize}
+
+\subsubsection{Verdict}
+In light of the fact that the speed advantages of C++ over interpreted languages like Python are largely removed due to Python wrappers over compiled binaries, the only compelling reason to implement the program in C++ is unconvincing.
+
+
+\subsection{IDL}
+
+IDL is a programming language developed by Exelis specifically for scientific computing, aiming to be easy to use, easy to read, and concise \cite{idl}. 
+
+\subsubsection{Advantages}
+\begin{itemize}
+\item \textbf{Built in functions:} Being a scientific computing language, IDL comes with a large amount of built in functions that lowers the requirement for external dependencies for complex mathematical functions, visualisation and data manipulation. Given the scientific context of IDL, it also has built in support for array operations not found in many other languages.
+\item \textbf{External libraries:} IDL is still a common choice for astronomical projects \cite{PythonPop}, and this is in large part due to comprehensive astronomical library repository available from NASA \cite{IDLAstro}. These libraries, in addition to the base functionality in the IDL language, cover most common astronomy data analysis cases.
+\end{itemize}
+\subsubsection{Disadvantages}
+\begin{itemize}
+\item \textbf{Syntax:} For developers unfamiliar with IDL, the large changes in standard language syntax throughout the language vastly reduce the readability of the code. Unusual function declaration and signatures, variable handling, pseudo-classes are but a few of the syntax irregularities of IDL from common languages like C, C++, Java, Python and FORTRAN.
+\item \textbf{Cost:} IDL requires a yearly license to install, which would discourage users to install the program onto personal computers instead of academic devices.
+\item \textbf{Interface:} IDL is primarily a procedural programming language and as such as few scant GUI features. Whilst developing some form of interface is possible with IDL, the high levels of interactivity desired may be unattainable without low level implementation of the user interface, which is to be avoided at all costs.
+\end{itemize}
+\subsubsection{Verdict}
+
+The price of IDL, its lack of proper interface support, and uncomfortable syntax easily outweigh the potential benefits of built in features and external libraries. As such, IDL cannot be recommended as the development language.
+
+\subsection{Javascript}
+\subsubsection{Advantages}
+\begin{itemize}
+\item \textbf{User Interface:} A Javascript computing program can leverage HTML and CSS interfaces, allowing the full range of functionality given by modern web pages with minimal effort. Javascript has hundreds of helper libraries designed to add to the base functionality of Javascript, and scores more to add better control between HTML and Javascript. This further reduces the difficulty of designing a high quality user interface.
+\item \textbf{Platform agnosticism:} All that a Javascript application requires to run is a modern browser, which is already a requirement for the OzDES team with their internet-based database system. In addition to platform agnosticism, a Javascript application has no installation and updates on refresh of the page.
+\item \textbf{Novelty:} Whilst not an advantage in terms of the OzDES team, scientific computing on a javascript application is highly unusual. This approach would therefore allow investigation of web applications as a basis for future scientific computing.
+\end{itemize}
+\subsubsection{Disadvantages}
+\begin{itemize}
+\item \textbf{Sandboxing:} Due to browser security, web applications are highly sandboxed. Access to the file system and system functions is impossible, and persistent storage is both browser specific and severely limited in size. 
+\item \textbf{Lack of libraries:} Given the novelty of scientific computing in Javascript, there is a severe lack of proper libraries for either formal data analysis and astronomical functions. The lack of these libraries would lead to manual implementation of a large amount of extraneous functions that could be found pre-implemented in either Python, C++ or IDL.
+\end{itemize}
+
+\subsubsection{Verdict}
+
+Whilst the sandboxing and lack of scientific libraries presents a difficult problem to overcome, the usability benefits, user interface benefits and especially the novelty of a javascript approach make it an extremely interesting avenue.
+
+
+\section{Language Decision}
+
+After analysis of the four proposed options of Python, C++, IDL and Javascript, the options of C++ and IDL can be safely discarded. Given the extra potential for unique research afforded by said novelty of the Javascript implementation, it was chosen over Python. However, due to the problems with the Javascript approach, and their inability to be solved (without changes to web security standards), a backup plan involving both Python and Javascript is kept in contingency. Such a plan could utilise a Python based local web server such as Django to perform the scientific analysis of the program if Javascript was unable to, and locally send the results to a Javascript interface via traditional HTTP requests and simplified via use of Representational State Transfer (REST), which allows implicit serialisation of Javascript objects to and from string representations that can easily be sent via the HTTP protocol. It is hoped that Javascript can be utilised for the entire application, and details on how the main issues with Javascript are to be avoided is provided in the next section.
+
+
 
 
 
