@@ -439,11 +439,37 @@ Whilst the sandboxing and lack of scientific libraries presents a difficult prob
 After analysis of the four proposed options of Python, C++, IDL and Javascript, the options of C++ and IDL can be safely discarded. Given the extra potential for unique research afforded by said novelty of the Javascript implementation, it was chosen over Python. However, due to the problems with the Javascript approach, and their inability to be solved (without changes to web security standards), a backup plan involving both Python and Javascript is kept in contingency. Such a plan could utilise a Python based local web server such as Django to perform the scientific analysis of the program if Javascript was unable to, and locally send the results to a Javascript interface via traditional HTTP requests and simplified via use of Representational State Transfer (REST), which allows implicit serialisation of Javascript objects to and from string representations that can easily be sent via the HTTP protocol. It is hoped that Javascript can be utilised for the entire application, and details on how the main issues with Javascript are to be avoided is provided in the next section.
 
 
+\section{Frameworks and Libraries}
 
+Due to the large number of frameworks, not all of them can be compared in this section. Instead, only the chosen frameworks will be examined.
+
+\subsection{Angularjs}
+
+Angulajs is a javascript framework designed by Google to allow HTMl, CSS and Javascript to interact in one Model-View-Whatever control scheme \cite{angularjs}. Two way data bindings between a Javascript model and HTML model would greatly simplify the creation of responsive user interfaces. Whilst other javascript frameworks exist, such as Ember.js and Backbone.js, none of them provide the utility and easy binding that angularjs can provide.
+
+\subsection{jQuery}
+
+jQuery is a javascript libraries aimed towards extending the native function of javascript, particularly in the area of HTML document manipulation, event handling and animation \cite{jQuery}. jQuery will be utilised in the project for the simplifications of manipulating DOM elements.
+
+\subsection{Bootstrap}
+
+Bootstrap is a collection of CSS styles and javascript helpers that allow easy creation of modern, flexible and responsive web interfaces \cite{bootstrap}. Bootstrap is being used to reduce the amount of time spent creating high quality interfaces.
+
+
+\subsection{fitsjs}
+
+Fitsjs is a javascript library that allows the reading of FITs files - the output format for astronomical files that will be used by OzDES that can include image data, binary tables, data cubes and more \cite{fitsjs}sar. The usage of the library should significantly decrease the amount of peripheral code required to be written before work can begin on the redshifting algorithms.
 
 
 \chapter{Implementation}
 \label{ch:impl}
+
+
+\section{User Interface}
+
+
+\section{Matching algorithm}
+
 
 Talk about EVERYTHINGGGGGGG
 
