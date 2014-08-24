@@ -215,6 +215,35 @@ Difficulties in redshifting spectra can also arise when physical interference in
 \end{figure}
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 \chapter{Prior Methods}
 \label{ch:prior}
 
@@ -278,7 +307,7 @@ Currently the OzDES team is using legacy software called \textsc{Runz} to perfor
 \includegraphics[width=1\textwidth]{images/RunzScreen.PNG} 
 \centering
 \caption{A screenshot of the \runz{} application in use. The four top plots represent detailed callout sections, with the full spectra shown in white in the bottom plot. The perspective template to match to is shown in green in all plots. The red line through the image serves as the cursor for \runz{}, where spectral lines are marked at the current cursor via keyboard shortcuts, which are displayed in a background terminal window to which \runz{} writes its output.}
-\label{fig:dust}
+\label{fig:runz}
 \end{figure}
 
 
@@ -336,7 +365,46 @@ The final requirement for the program is in being able to integrate with the exi
 
 
 
-\chapter{Design Decisions}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\chapter{Design and Tool Decisions}
 \label{ch:design}
 
 The requirements discussed in the previous chapter allow comparison of multiple possible development pathways. In this section, high level design decisions are laid out in terms of their advantages and disadvantages. 
@@ -461,21 +529,173 @@ Bootstrap is a collection of CSS styles and javascript helpers that allow easy c
 Fitsjs is a javascript library that allows the reading of FITs files - the output format for astronomical files that will be used by OzDES that can include image data, binary tables, data cubes and more \cite{fitsjs}sar. The usage of the library should significantly decrease the amount of peripheral code required to be written before work can begin on the redshifting algorithms.
 
 
+\section{Tools}
+
+In any non-trivial software development project, a selection of development tools needs to be chosen in order to handle aspects such as revision control, development environments and delivery mechanisms. Thankfully, the simple design workflow of this project means that the number of required tools is minimal.
+
+\subsection{Git and GitHub}
+
+Git is an open-source, free version control system that is used by a vast amount of developers and companies, from Google, to Facebook, Microsoft, Twitter and Netflix \cite{git}. Git allows intelligent version control with a high level of flexibility, and is the version control system used by the popular and free repository hosting website GitHub. GitHub has been chosen as the hosting site due to free issue tracking, transparency, and most of all the ability to host repository content as a web page \cite{GitHub}. This thesis project can be found on GitHub at \url{https://github.com/Samreay/ThesisZ}.
+
+\subsection{JetBrains WebStorm 7}
+
+WebStorm has been chosen as the integrated development environment (IDE) of choice for this project, as it is explicitly tailored for Javascript web projects. WebStorm supports AngularJS plugins, one click server setup, intelligent code completion and integrates directly with Git \cite{WebStorm}.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 \chapter{Implementation}
 \label{ch:impl}
+
+This chapter details the final implementation and end result of the project, starting with an the user interface and then the redshift matching algorithm that runs behind the scenes. Problems encountered and revisions during the development are discussed at the end of the chapter to ensure that the prior sections deal exclusively with the end product of the thesis.
+
 
 
 \section{User Interface}
 
+\section{Pages}
+
+\subsection{Landing Page}
+
+The user interface developed initially leads users to an empty overview screen, with only the navigation menu and the side bar displaying, as is shown in Figure \ref{fig:empty}. This page has been kept empty so that the drag and drop prompt in the upper left hand corner of the screen will be located by the user in a minimum amount of time. From this page, a user can either navigate to other tabs, or drop a FITs file or a previously saved results file into the drop zone in the upper left hand corner of the page. With no other content to distract users, no one in user testing had difficulty dropping a file in as the first step of using the program. Some users did decide to navigate to the Usage page first, however.
+
+\begin{figure}[ht!]
+\includegraphics[width=1\textwidth]{images/empty.png} 
+\centering
+\caption{The landing page displayed to a user when they navigate to the site.}
+\label{fig:empty}
+\end{figure}
+
+
+
+\subsection{Usage Page}
+
+The Usage page serves as the programs Help page and menu, and can be accessed via clicking on the navigation menu or by pressing the ``?" key. The introductory segment, displayed in Figure \ref{fig:usage}, informs the user on the input expected by the program, how to load that input into the program, and then how to analyse it. It also details the automatic saving of results so the user knows closing the browser will not lose work, and provides contact links to the developer and issue tracking page so that any bugs or feature requests can be communicated easily.
+
+
+\begin{figure}[ht!]
+\includegraphics[width=1\textwidth]{images/usage.png} 
+\centering
+\caption{The usage page, with the introductory accordion expanded and all others collapsed.}
+\label{fig:usage}
+\end{figure}
+
+
+The ``Loading Files" accordion section details reiterates how to load files in, and provides four compatible FITs files that are publicly hosted which can be downloaded and then given to the application if the user simply wants to use the application without having a data file of their own. This page also details the background processes that occur after dropping a file in: namely that each spectra first gets preprocessed and then gets a redshift estimate given to users. This section explains that a progress bar will appear in the footer once a FITs file is dragged in, and that the progress through preprocessing is shown as a green progress bar, the progress through redshifting matching is shown as a red progress bar, and once all spectra have a redshift, the progress bar will turn blue.
+
+
+The accordion sections for the Overview, Detailed, Templates and Settings screen explain their function and how to interact with them. For example, the Detailed section explains how the template matching works, how to cycle through the best automatic results, how to manually adjust the redshift, how to mark spectral lines and how to assign a quality to the final redshift. The final section, on keyboard shortcuts, provides the user with a list of shortcuts, where they are applicable, and what they do. A section of this screen can be seen in Figure \ref{fig:keyboard}.
+
+\begin{figure}[ht!]
+\includegraphics[width=1\textwidth]{images/keybindings.png} 
+\centering
+\caption{The keyboard shortcuts accordion presented to the user.}
+\label{fig:keyboard}
+\end{figure}
+
+
+\pagebreak
+\subsection{Overview Page}
+
+After dragging and dropping a FITs file into the application, the Overview screen populates by default with a series of graphical tiles that show the spectra in black and the currently matched template at the matched redshift in red. Figure \ref{fig:overviewGraph} shows this screen after preprocessing is complete and nine spectrum have been matched.
+
+Whilst not specific to the Overview screen, notice that the drop zone has changed its display text to reflect the file which was given to the program, and the sidebar contains a more condensed list of spectra with their redshift estimates and quality ratings that remains visible on any screen. As discussed in the Overview section, the progress bar visible in the page footer details how many spectra have been analyses and how many are still remaining. The red colour of the progress bar in Figure \ref{fig:overviewGraph} indicates that the current state is redshift estimation, and the blue colour of the progress bar in Figure \ref{fig:overviewTable} indicates that all spectra have had a redshift assigned. The user can pause and resume processing and matching via the Pause/Resume button in light blue in the footer, and can download the results of every spectra that been assigned a redshift (via automatic matching or manual) when they click the ``Download" button to the right. The CSV file downloaded can be given to other users and its results loaded into the application via dragging and dropping onto the drop zone, or be used for database ingestion.
+
+On both the graphical and tabular view, a user can select any spectra by clicking on either the graph or the table row (for visual example, the first spectrum has been selected in Figure \ref{fig:overviewTable} as shown by the blue background of the first row), and a double click will take them to the detailed page with the selected spectra set to the one they clicked on. In the tabular view, users can also reorder the results by clicking on the table headings, where a use case example of this sorting would be sorting by spectra matching quality so that low quality spectra can be reviewed.
+
+The overview page has little extra functionality, as it mainly servers to present a large amount of coalesced data to the user rather than offer serious interactivity. 
+
+
+
+\begin{figure}[ht!]
+\includegraphics[width=1\textwidth]{images/overviewGraph.png} 
+\centering
+\caption{The Overview screen in graph mode, after dropping in a FITs file and letting the processing finish and the matching algorithm match nine spectra.}
+\label{fig:overviewGraph}
+\end{figure}
+
+\begin{figure}[ht!]
+\includegraphics[width=1\textwidth]{images/overviewTable.png} 
+\centering
+\caption{The Overview screen in table mode, after dropping in a FITs file and letting the processing finish and the matching algorithm match all spectra. The first row, corresponding to spectra ID 1, is selected in this example.}
+\label{fig:overviewTable}
+\end{figure}
+
+
+
+
+
+\subsection{Detailed Page}
+
+batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman 
+
+
+\subsection{Templates Page}
+
+batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman 
+
+\subsection{Settings Page}
+
+batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman 
 
 \section{Matching algorithm}
 
 
+
+\section{Problems Encountered}
+
+
+
+
+
 Talk about EVERYTHINGGGGGGG
+
+\chapter{Discussion}
+
+
 
 
 
 \chapter{Project Evaluation}
+
+
+
 
 \section{Completion}
 
