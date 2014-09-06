@@ -38,6 +38,9 @@
 \newcommand{\rcross}{\color{red} \cross }
 \newcommand{\runz}{\textsc{Runz}}
 
+\newcommand{\brac}[1]{\left( #1 \right)}
+\newcommand*\mean[1]{\bar{#1}}
+
 \begin{document}
 % =====================================================================
 % =====================================================================
@@ -504,7 +507,7 @@ Whilst the sandboxing and lack of scientific libraries presents a difficult prob
 
 \section{Language Decision}
 
-After analysis of the four proposed options of Python, C++, IDL and Javascript, the options of C++ and IDL can be safely discarded. Given the extra potential for unique research afforded by said novelty of the Javascript implementation, it was chosen over Python. However, due to the problems with the Javascript approach, and their inability to be solved (without changes to web security standards), a backup plan involving both Python and Javascript is kept in contingency. Such a plan could utilise a Python based local web server such as Django to perform the scientific analysis of the program if Javascript was unable to, and locally send the results to a Javascript interface via traditional HTTP requests and simplified via use of Representational State Transfer (REST), which allows implicit serialisation of Javascript objects to and from string representations that can easily be sent via the HTTP protocol. It is hoped that Javascript can be utilised for the entire application, and details on how the main issues with Javascript are to be avoided is provided in the next section.
+After analysis of the four proposed options of Python, C++, IDL and Javascript, the options of C++ and IDL can be safely discarded. Given the extra potential for unique research afforded by said novelty of the Javascript implementation, it was chosen over Python. However, due to the problems with the Javascript approach, and their inability to be solved (without changes to web security standards), a backup plan involving both Python and Javascript is kept in contingency. Such a plan could utilise a Python based local web server such as Django to perform the scientific analysis of the program if Javascript was unable to, and locally send the results to a Javascript interface via traditional HTTP requests and simplified via use of Representational State Transfer (REST), which allows implicit serialisation of Javascript objects to and from string representations that can easily be sent via the HTTP protocol. It is hoped that Javascript can be utilised for the entire application, and details on how the main issues with Javascript are to be avoided is incorporated into the implementation section.
 
 
 \section{Frameworks and Libraries}
@@ -584,6 +587,18 @@ WebStorm has been chosen as the integrated development environment (IDE) of choi
 \label{ch:impl}
 
 This chapter details the final implementation and end result of the project, starting with an the user interface and then the redshift matching algorithm that runs behind the scenes. Problems encountered and revisions during the development are discussed at the end of the chapter to ensure that the prior sections deal exclusively with the end product of the thesis.
+
+
+\section{Program Structure}
+
+The application designed takes full use of the new HTML5 feature of Web Workers in order to enable pseudo multi-threaded applications to be designed. Processing and matching spectra is therefore done in background processes (web workers), which are managed by a processor manager that assigns new tasks (processing or matching a spectra) to a web worker once it finishes it's current tasks. Assigned tasks are found via a priority queue which gets populated upon loading in a FITs file. The processor manager is also responsible for taking the web worker results and parsing the data into a form usable by the user interface. The interface can also pause and resume the processor manager. A diagram of these interactions is provided in Figure \ref{fig:diagram}.
+
+\begin{figure}[ht!]
+\includegraphics[width=0.8\textwidth]{images/diagram.jpg} 
+\centering
+\caption{A basic diagram showing the program structure, with arrows indicating interactions between components. It should be noted that communication with web workers is strictly done via native javascript objects, and as such both the data given to web workers and the results they send back is converted into a JSON string format to allow easy serialisation of more complicated data structures. The number of web workers displayed in the diagram is not representative of the program itself, which aims to have a minimum of one web worker, with the desired number being one less than the number of logical processors on the client system, ensuring that one processor is free if possible to handle the user interface.}
+\label{fig:diagram}
+\end{figure}
 
 
 
@@ -674,34 +689,106 @@ The detailed page is where users review automatic redshifts and manually redshif
 
 \textbf{Label Guide:}
 \begin{enumerate}
-\item batman
-\item batman
-\item batman
-\item batman
-\item batman
-\item batman
-\item batman
-\item batman
-\item batman
-\item batman
-\item batman
-\item batman
-\item batman
-\item batman
-\item batman
-\item batman
+\item \textbf{Spectra details header:} This header contains the spectra ID, its name, right ascension, declination, magnitude and expected type.
+\item \textbf{Data toggle:} With this toggle, a user can go from toggle between viewing raw spectra data or the processed data. Processed data includes removal of blanks and detection of cosmic rays and a more advanced and computationally expensive continuum removal process.
+\item \textbf{Template Toggle:} A user can click on this button to toggle the template either on or off. Most use cases involve the template being displayed, but in some circumstances the user may want to remove all non-spectra data from the plot, and thus this toggle button is provided.
+\item \textbf{Continuum toggle:} This toggle allows users to view spectra and templates with or without continuum. Continuum subtraction algorithms are detailed in section \textcolor{red}{PUT THE SECTION IN HERE}.
+\item \textbf{Reset buttons:} The user is provided with two buttons, one to reset the template and redshift to the automatic match, and another to reset it to the manual match. In many cases where automatic matching is correct, these two options will be identical.
+\item \textbf{Smoothing:} This slider allows users to smooth spectra via boxcar smoothing where the smoothing number controls with window size applied in the smoothing process.
+\item \textbf{Top Results:} After automatic matching has processed the selected spectra, the top five automatic results are given to the user. These results can be viewed by simply clicking on the five numbered radio buttons.
+\item \textbf{Template Selector:} This options input allows users to select a template from the twelve predefined templates or to select none at all.
+\item \textbf{Redshift:} Users can type in a desired redshift or drag the slider to scroll through values, where the redshift of the template displayed will instantaneously update to match the input redshift value.
+\item \textbf{Quality Selectors:} By clicking on one of the five vertical buttons, users can save the currently selected template and redshift to a manual result with a given quality. Due to the target objects of the OzDES survey (extra-galactic), users can also mark spectra as stars, so that they can be removed from consideration.
+\item \textbf{Spectral Lines:} A large part of manual matching is to mark spectral lines. This can be done by selecting a point on the graph, and then clicking on one of the available spectral lines. The line will be marked at the location selected, and the redshift determined from the marked wavelength with respect to the rest frame wavelength of the spectral line.
+\item \textbf{Zoom Out:} As users can zoom into parts of the graph via clicking and dragging a window, this button allows users to zoom out to see the entire spectra again.
+\item \textbf{Graph Canvas:} The rest of the page area is given to canvas space. At the top of the canvas, any visible spectra lines are marked, and a fixed pixel width grid is displayed to the user.
+\item \textbf{Spectra Plot:} The top plot shown is the observed spectra currently with a smoothing window of five pixels. Four broad quasar peaks are clearly visible in this spectra.
+\item \textbf{Spectral Line Markers:} By default, all spectral lines are shown to the user, although they can be hidden via a ``Hide spectral lines" button (a blue button directly to the right of the the number 10 label). Line positions are determined via the current redshift, and scrolling through redshift details will therefore also scroll the positions of these lines, making it easier to match features.
+\item \textbf{Template Plot:} The template plot is shown in red. The currently selected template is a quasar at redshift approximately 1.84, as shown in the template and redshift inputs (labels 8 and 9 respectively).
 \end{enumerate}
 
-batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman 
+The visual detail presented to the user at any time, and the instantaneous response of the user interface to all changes in input values is designed to minimise the amount of time taken for a user to select an accurate redshift, and increase the accuracy of the user's redshift estimates. In addition to the selectable elements detailed above, keyboard shortcuts using the same keys as the \runz{} application also work in the detailed page, making the transition process from \runz{} to the new software as easy as possible.
 
-
+\pagebreak
 \subsection{Templates Page}
 
-batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman 
+The templates page is not actively used in redshifting spectra, and serves to provide a graphical list of all templates to the user, with the wavelength range explicitly stated. 
+
+
+\begin{figure}[ht!]
+\includegraphics[width=1\textwidth]{images/templates.png} 
+\centering
+\caption{The templates screen, showing the last three templates in the catalogue: A high redshift star forming galaxy, a transitional galaxy and a quasar. This screen is most useful when customising the template catalogue, and standard redshifting use cases do not have users visiting this screen in the redshifting process.}
+\label{fig:templates}
+\end{figure}
+
+
 
 \subsection{Settings Page}
 
-batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman batman 
+The settings page is also a page outside of usage for the redshifting process. It's primary functionality that it is used for is to override the number of processors being used by the application, and to delete previously determined results. The former scenario is useful in the case where the user interface starts to slow due to intense background processing, and the latter is useful when an update to the matching algorithm may warrant re-redshifting spectra, requiring the past results to be cleared from the system. Results can be deleted globally for all input FITs files, or they can be deleted for a FITs file when loaded in (to preserve the matching results for other files). Settings on this page persist between user settings and are stored as site cookies, and any settings changed apply instantly and can be reversed. As deleting saved results cannot be reversed, a cautionary banner is displayed at the top of the settings page, and a confirmation dialogue box is displayed to the user when attempting to clear any saves.
+
+
+\begin{figure}[ht!]
+\includegraphics[width=1\textwidth]{images/settings.png} 
+\centering
+\caption{The full settings page, with the few settings that are currently available to users.}
+\label{fig:templates}
+\end{figure}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\pagebreak
+\section{Processing algorithm}
+
+The processing algorithm is responsible for presenting the end user with a spectra to manually redshift as quickly as possible, with defects such as blanks and cosmic rays automatically removed, and to have the spectra available with and without continuum. 
+
+\subsection{Removing Bad Pixels}
+
+A pixel is determined to be bad if it satisfies any of a number of criteria, which are as follows: if the spectra or variance is not a number or is null, if the variance is negative, or if the spectra intensity is greater or less than specific thresholds. If a pixel matches that criteria, it's intensity and variance is replaced with a mean over a window before and after pixel.
+
+This process can be described mathematically via the following formula, where $s_i$ represents the $i$th element of the spectra, $v_i$ represents the $i$th element of the spectra variance, and $n$ is the floored half window width, such that a window of seven pixels would give $n=3$.
+\begin{align}
+s_i = 
+\begin{cases}
+	\brac{\sum\limits_{j=i-n}^{i+n} \begin{cases}1 & \text{if } f(j) \\ 0 & \text{otherwise} \end{cases}}^{-1}\brac{\sum\limits_{j=i-n}^{i+n} \begin{cases}s_j & \text{if } f(j) \\ 0 & \text{otherwise} \end{cases}} & \text{if } f(i) \\
+	s_i & \text{otherwise}
+\end{cases}\\
+\text{such that } f(i) = \brac{s_i > 10^6} \vee \brac{s_i <  -\left(10^4\right)} \vee \brac{v_i < 0} \vee \brac{s_i \notin \mathbb{R}} \vee \brac{v_i \notin \mathbb{R}},
+\end{align} 
+
+
+\subsection{Removing Cosmic Rays}
+
+\textcolor{red}{HAVE YET TO FINALISE THIS, GRRRR}.
+
+
+\subsection{Removing Continuum}
+
+
 
 \section{Matching algorithm}
 
