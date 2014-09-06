@@ -692,7 +692,7 @@ The detailed page is where users review automatic redshifts and manually redshif
 \item \textbf{Spectra details header:} This header contains the spectra ID, its name, right ascension, declination, magnitude and expected type.
 \item \textbf{Data toggle:} With this toggle, a user can go from toggle between viewing raw spectra data or the processed data. Processed data includes removal of blanks and detection of cosmic rays and a more advanced and computationally expensive continuum removal process.
 \item \textbf{Template Toggle:} A user can click on this button to toggle the template either on or off. Most use cases involve the template being displayed, but in some circumstances the user may want to remove all non-spectra data from the plot, and thus this toggle button is provided.
-\item \textbf{Continuum toggle:} This toggle allows users to view spectra and templates with or without continuum. Continuum subtraction algorithms are detailed in section \textcolor{red}{PUT THE SECTION IN HERE}.
+\item \textbf{Continuum toggle:} This toggle allows users to view spectra and templates with or without continuum. Continuum subtraction algorithms are detailed in section \ref{sec:continuum}.
 \item \textbf{Reset buttons:} The user is provided with two buttons, one to reset the template and redshift to the automatic match, and another to reset it to the manual match. In many cases where automatic matching is correct, these two options will be identical.
 \item \textbf{Smoothing:} This slider allows users to smooth spectra via boxcar smoothing where the smoothing number controls with window size applied in the smoothing process.
 \item \textbf{Top Results:} After automatic matching has processed the selected spectra, the top five automatic results are given to the user. These results can be viewed by simply clicking on the five numbered radio buttons.
@@ -733,7 +733,7 @@ The settings page is also a page outside of usage for the redshifting process. I
 \includegraphics[width=1\textwidth]{images/settings.png} 
 \centering
 \caption{The full settings page, with the few settings that are currently available to users.}
-\label{fig:templates}
+\label{fig:settings}
 \end{figure}
 
 
@@ -764,13 +764,13 @@ The settings page is also a page outside of usage for the redshifting process. I
 \pagebreak
 \section{Processing algorithm}
 
-The processing algorithm is responsible for presenting the end user with a spectra to manually redshift as quickly as possible, with defects such as blanks and cosmic rays automatically removed, and to have the spectra available with and without continuum. 
+The processing algorithm is responsible for presenting the end user with a spectra to manually redshift as quickly as possible, with defects such as blanks and cosmic rays automatically removed, and to have the spectra available with and without continuum. \textcolor{red}{CITE IVAN BALDRY AND WHERE HE GOT HIS STUFF FROM AS WELL}.
 
 \subsection{Removing Bad Pixels}
 
 A pixel is determined to be bad if it satisfies any of a number of criteria, which are as follows: if the spectra or variance is not a number or is null, if the variance is negative, or if the spectra intensity is greater or less than specific thresholds. If a pixel matches that criteria, it's intensity and variance is replaced with a mean over a window before and after pixel.
 
-This process can be described mathematically via the following formula, where $s_i$ represents the $i$th element of the spectra, $v_i$ represents the $i$th element of the spectra variance, and $n$ is the floored half window width, such that a window of seven pixels would give $n=3$.
+This process can be described mathematically via the following formula, where $s_i$ represents the $i$th element of the spectra, $v_i$ represents the $i$th element of the spectra variance, and $n$ is the floored half window width, such that a window of nine pixels (value currently in use) would give $n=4$.
 \begin{align}
 s_i = 
 \begin{cases}
@@ -786,9 +786,9 @@ s_i =
 \textcolor{red}{HAVE YET TO FINALISE THIS, GRRRR}.
 
 
-\subsection{Removing Continuum}
+\subsection{Removing Continuum} \label{sec:continuum}
 
-
+Continuum is subtracted from the spectra via the means of rejected polynomial fitting. A six degree polynomical is fitted to the spectrum, and any points more than 3.5 standard deviations from the fitted polynomial are removed from consideration. A new polynomial is fitted to the remaining points, and points greater than 3.5 standard deviations are again rejected. Iterations stop after a maximum number of fifteen iterations or until all points are within 3.5 standard deviations of the polynomial. The rejections serve the purpose of conforming the polynomial to the actual continuum so that no warping of the fit occurs to try and match strong features and emission lines.
 
 \section{Matching algorithm}
 
