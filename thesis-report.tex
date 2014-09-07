@@ -40,6 +40,10 @@
 
 \newcommand{\brac}[1]{\left( #1 \right)}
 \newcommand*\mean[1]{\bar{#1}}
+\newcommand\abs[1]{\left|#1\right|}
+\newcommand {\etal} {\emph{~et~al.} }
+
+\DeclareMathOperator*{\median}{median}
 
 \begin{document}
 % =====================================================================
@@ -772,16 +776,36 @@ A pixel is determined to be bad if it satisfies any of a number of criteria, whi
 
 This process can be described mathematically via the following formula, where $s_i$ represents the $i$th element of the spectra, $v_i$ represents the $i$th element of the spectra variance, and $n$ is the floored half window width, such that a window of nine pixels (value currently in use) would give $n=4$.
 \begin{align}
-s_i = 
+s_i &= 
 \begin{cases}
-	\brac{\sum\limits_{j=i-n}^{i+n} \begin{cases}1 & \text{if } f(j) \\ 0 & \text{otherwise} \end{cases}}^{-1}\brac{\sum\limits_{j=i-n}^{i+n} \begin{cases}s_j & \text{if } f(j) \\ 0 & \text{otherwise} \end{cases}} & \text{if } f(i) \\
+	\brac{\sum\limits_{j=i-n}^{i+n} \begin{cases}1 & \text{if } \lnot f(j) \\ 0 & \text{otherwise} \end{cases}}^{-1}\brac{\sum\limits_{j=i-n}^{i+n} \begin{cases}s_j & \text{if } \lnot f(j) \\ 0 & \text{otherwise} \end{cases}} & \text{if } f(i) \\
 	s_i & \text{otherwise}
 \end{cases}\\
-\text{such that } f(i) = \brac{s_i > 10^6} \vee \brac{s_i <  -\left(10^4\right)} \vee \brac{v_i < 0} \vee \brac{s_i \notin \mathbb{R}} \vee \brac{v_i \notin \mathbb{R}},
+\text{such that } f(i) &= \brac{s_i > 10^6} \vee \brac{s_i <  -\left(10^4\right)} \vee \brac{v_i < 0} \vee \brac{s_i \notin \mathbb{R}} \vee \brac{v_i \notin \mathbb{R}}.
 \end{align} 
 
+Whilst the equation above deals with the spectra $s_i$, an identical procedure is followed for the variance as well.
 
+\pagebreak
 \subsection{Removing Cosmic Rays}
+
+Cosmic rays are detected via flagging points more than thirty standard deviations from the mean and the maximum neighbouring point. Points that satisfy these criteria are replaced with a average intensity over a window to either side such that only points less than thirty standard deviations from the mean are considered part of the average. The variance for these points is set to a maximal value, currently set as $10^{10}$. The large variance results in the points being removed from consideration in the non-quasar cross correlation process later on, and so the averaging of the spectra intensity is used only for quasar matching and so that users undergoing manual redshifting are provided with a visually clean spectra. The window size for averaging is set to five, such that $n = 2$.
+
+\begin{align}
+s_i &= 
+\begin{cases}
+	\brac{\sum\limits_{j=i-n}^{i+n} \begin{cases}1 & \text{if } \lnot f(j) \\ 0 & \text{otherwise} \end{cases}}^{-1}\brac{\sum\limits_{j=i-n}^{i+n} \begin{cases}s_j & \text{if } \lnot f(j) \\ 0 & \text{otherwise} \end{cases}} & \text{if } f(i)\land g(i) \\
+	s_i & \text{otherwise}
+\end{cases}\\
+v_i &= 
+\begin{cases}
+	10^{10} & \text{if } f(i)\land g(i) \\
+	v_i & \text{otherwise}
+\end{cases}\\
+\text{such that } f(i) &= \brac{\abs{s_i - \mean{s_i}} > 30 \sigma}, \\
+\text{and } g(i) &= \brac{max\brac{\abs{s_i - s_{i-1}}, \abs{s_i - s_{i+1}}} > 30 \sigma}
+\end{align} 
+
 
 \textcolor{red}{HAVE YET TO FINALISE THIS, GRRRR}.
 
@@ -790,20 +814,100 @@ s_i =
 
 Continuum is subtracted from the spectra via the means of rejected polynomial fitting. A six degree polynomical is fitted to the spectrum, and any points more than 3.5 standard deviations from the fitted polynomial are removed from consideration. A new polynomial is fitted to the remaining points, and points greater than 3.5 standard deviations are again rejected. Iterations stop after a maximum number of fifteen iterations or until all points are within 3.5 standard deviations of the polynomial. The rejections serve the purpose of conforming the polynomial to the actual continuum so that no warping of the fit occurs to try and match strong features and emission lines.
 
+Continuum subtraction for the raw data (as opposed to the process above) is simply done via a six degree fitted polynomial subtraction, and thus the processed continuum removal of rejected polynomial fitting provides a significant improvement over the raw data continuum subtraction.
+
 \section{Matching algorithm}
 
+After removing bad pixels, cosmic rays and continuum subtraction, the spectra is duplicated, one to undergo quasar matching, and the other to match other templates, and these copies will be referred to as the generic and quasar spectra. Each step of the algorithm in this section will explicitly clarify whether or not it applies to the quasar or generic spectra (or both).
 
+\subsection{Smooth and Subtract}
+
+Applies to only the generic spectra. This step applies a median filter of width 51 pixels and then boxcar smoothing of 121 pixels and subtracts this result from the spectra to further remove continuum. This step is not applied to the quasar template as the broad peaks of the quasar template that this step removes are matching features and not continuum details.
+
+\textcolor{red}{THIS SEEMS SIMPLE ENOUGH NOT TO NEED MATHS.}
+
+\subsection{Rolling Point Mean}
+
+Applies only to quasar spectra. In order to smooth out broad features but preserve pixel peak location, a seven pixel window  decaying mean filter is applied with a decay factor of 0.9. As the generic spectra matches on narrow emission and absorption features, it would negatively impact matching performance to smooth those features, unlike the broad quasar features. Formally, for each point in the quasar spectrum $s_i$, 
+
+\begin{align}
+s_i = \frac{\sum\limits_{j = i -n}^{i+n} \beta^{\abs{j-i}} s_j}{\sum\limits_{\alpha=-n}^n \beta^{\abs{\alpha}}},
+\end{align}
+where a window size of seven pixels gives $n=3$ and the decay factor gives $\beta = 0.9$.
+
+\subsection{Taper Spectra}
+
+Spectra tapering (also known as a window function or apodization) is required to remove ringing from a Fourier transform of the signal and smooth discontinuities. Both the generic and quasar spectra are tapered, and the means is via a sixty pixel sinusoid taper with five pixels of zero padding. \textcolor{red}{REMOVE ZERO PADDING SEE IF ANYTHING CHANGES}. The front taper can be described thus:
+
+
+\begin{align}
+s_i &= 
+\begin{cases}
+	0 & \text{if } i < z \\
+	s_i \sin\brac{\frac{\pi (i-z)}{2w}} & \text{if } i < (z+w) \\
+	s_i & \text{otherwise},
+\end{cases}
+\end{align} 
+
+where $z$ represents the zero padding width ($z=5$), and $w$ represents the taper width ($w=60$). \textcolor{red}{GET SOURCES ON THIS.}
+
+\subsection{Error Adjustment}
+
+Error adjustment is only applied to the generic templates, and involves three steps: broadening error, median adjustment and division of the spectra by the variance squared. In the first step, error is broadened over adjacent pixels, such that for all point in the variance spectrum $v_i$, 
+
+\begin{align}
+v_i = \mathrm{max}(v_{i-1}, v_i, v_{i+1}).
+\end{align}
+
+After this, the error for each point is adjusted to be the maximum between the current value, and 0.7 times the median of a 13 pixel window centred around the pixel in question, such that
+
+\begin{align}
+v_i = \mathrm{max}\brac{v_i, 0.7\cdot \median\{v_{i-n}:v_{i+n}\}}.
+\end{align}
+
+This error adjustment serves to account for subpixel differences in sky subtraction and to increase error on pixels that have far lower error than their neighbours. After this error adjustment, the spectrum was divided by the error spectrum squared as justified by Saunders \etal \cite{saunders2004improvements}, such that for all $s_i,\ s_i = s_i \cdot v_i^{-2}$.
+
+This step was not implemented on the quasar template, as the variance in the error spectrum meant that diving by the variance squared polluted the broad peaks to such an extent that they were unmatchable. Instead, the quasar spectra does not consider spectra error, as the broadness of the peaks means that individual uncertainty on a pixel basis is unimportant to the final result.
+
+\subsection{Normalisation and Cross Correlation}
+
+Both the generic and quasar spectra undergo RMS normalisation such that $s_i = s_i \sigma^{-1}$ before undergoing cross correlation. Both spectra are then oversampled and rebinned in an equispaced log array of $32\;768$ elements from the range $10^{2.8}$ to $10^{4.3}$, where those exponent values are chosen to allow for the full redshift range for each template. Both spectra are then Fourier transformed into the frequency domain.
+
+The template catalogue, upon program initialisation, also undergoes the preprocessing described in previous sections (where the quasar template takes the place of the quasar spectra, and all other templates take the place of the generic spectra), and they are rebinned as well, transformed, and conjugated.
+
+The transformed generic spectra is then multiplied with the non-quasar templates, inverse transformed, circularly shifted half the size of the inverse array length and a subsection of the results are returned, where the subsection is determined by the allowed redshift ranges of each specific template. These pruned results then have a rejected mean subtracted, such that the average of the all points bar the greatest 4\% is subtracted from the results, and then are normalised using their RMS value, just as the spectra were normalised before Fourier transformation.
+
+\subsection{Peak Selection}
+
+The normalised cross correlation data then undergoes peak selection, in which peaks are identified over a five pixel window, such that for the cross correlation values $c_i$, an index $i$ is identified as a peak if and only if
+
+\begin{align}
+\brac{c_i \geq c_{i+1}} \land \brac{c_i \geq c_{i+2}} \land \brac{c_i > c_{i-1}} \land \brac{c_i > c_{i-2}}.
+\end{align}
+
+Data peaks then had a quadratic fitted over that 5 pixel window, and the maximum value of the fitted quadratic, along with its effective index, is set to as the detected peak. The final list of peaks for the template matched is then returned.
+
+\subsection{Coalescing Peak Results}
+
+applying weights, combining peaks, sorting, converting to redshift, rounding to 5 decimal places, ensuring redshift difference threshold
+
+\textcolor{red}{NEED TO FINISH ACTUALLY DOING THIS.}
+
+
+
+\section{Alternate Implementations}
+
+talk about chi2
 
 \section{Problems Encountered}
 
-
-
-
+file manager storage, lack of js libraries, 5mb system limit, inability to detect cpu cores, slowness of code before refactor, requirement to redo the interface, go through github issues
 
 Talk about EVERYTHINGGGGGGG
 
-\chapter{Discussion}
+\chapter{Performance}
 
+put in those cool charts
 
 
 
