@@ -147,7 +147,15 @@ This report is divided into several sections, with the background and context fo
 
 Redshifting a spectra is the process by which the degree of spectra from its original emission state is quantified. Over cosmic distances, the expansion of the universe causes travelling light to become stretched, and thus the measured amount of stretching provides valuable information about the travel time of the light, and thus the distance to the emission entity. As multiple cosmological models are still being actively considered \cite{davis2007scrutinizing}, it is prudent to keep measurements in the form of redshifts, as different cosmological models will translate redshifts to different comoving distances.\\
 
-Redshifting can be obtained both from spectrographic and photometric data, each with advantages and disadvantages. Whilst photometric data can be used for fainter objects than currently viable for spectrographs, photometric redshifts do not possess the accuracy of spectrographic measurements \cite{bolzonella2000photometric}. It is important to note that the OzDES team, for which this thesis was undertaken, are not utilising any photometric redshifts as priors, nor does their instrumentation require photometric data. The OzDES team are utilising the Anglo-Australian Telescope (AAT) with the AAOmega spectrograph \cite{d2014ozdes}, and thus only require a spectrographic redshifting solution.
+The redshift of an observed wavelength is defined with respect to its emission wavelength, such that
+
+\begin{align}
+z = \frac{\lambda_{\text{obsv}}}{\lambda_{\text{emit}}} - 1,
+\end{align}
+
+and thus an emitted wavelength of 500nm that has been redshifted by $z = 0.5$ would be observed as radiation of wavelength 750nm.
+
+Redshift estimates can be obtained both from spectrographic and photometric data, each with advantages and disadvantages. Whilst photometric data can be used for fainter objects than currently viable for spectrographs, photometric redshifts do not possess the accuracy of spectrographic measurements \cite{bolzonella2000photometric}. It is important to note that the OzDES team, for which this thesis was undertaken, are not utilising any photometric redshifts as priors, nor does their instrumentation require photometric data. The OzDES team are utilising the Anglo-Australian Telescope (AAT) with the AAOmega spectrograph \cite{d2014ozdes}, and thus only require a spectrographic redshifting solution.
 
 \section{Spectrographic Features}
 
@@ -820,24 +828,23 @@ Continuum subtraction for the raw data (as opposed to the process above) is simp
 
 After removing bad pixels, cosmic rays and continuum subtraction, the spectra is duplicated, one to undergo quasar matching, and the other to match other templates, and these copies will be referred to as the generic and quasar spectra. Each step of the algorithm in this section will explicitly clarify whether or not it applies to the quasar or generic spectra (or both).
 
-\subsection{Smooth and Subtract}
+\subsection{Further preprocessing}
 
-Applies to only the generic spectra. This step applies a median filter of width 51 pixels and then boxcar smoothing of 121 pixels and subtracts this result from the spectra to further remove continuum. This step is not applied to the quasar template as the broad peaks of the quasar template that this step removes are matching features and not continuum details.
+Further continuum subtraction applies to only the generic spectra. This second step of continuum subtraction applies a median filter of width 51 pixels and then boxcar smoothing of 121 pixels and subtracts this result from the spectra to further remove continuum. This step is not applied to the quasar template as the broad peaks of the quasar template that this step removes are matching features and not continuum details.\\
 
 \textcolor{red}{THIS SEEMS SIMPLE ENOUGH NOT TO NEED MATHS.}
 
-\subsection{Rolling Point Mean}
 
-Applies only to quasar spectra. In order to smooth out broad features but preserve pixel peak location, a seven pixel window  decaying mean filter is applied with a decay factor of 0.9. As the generic spectra matches on narrow emission and absorption features, it would negatively impact matching performance to smooth those features, unlike the broad quasar features. Formally, for each point in the quasar spectrum $s_i$, 
+
+The quasar template, instead of having the second step of continuum subtraction applied, instead smooths the spectra. In order to smooth out broad features but preserve pixel peak location, a seven pixel window  decaying mean filter is applied with a decay factor of 0.9. As the generic spectra matches on narrow emission and absorption features, it would negatively impact matching performance to smooth those features, unlike the broad quasar features. Formally, for each point in the quasar spectrum $s_i$, 
 
 \begin{align}
 s_i = \frac{\sum\limits_{j = i -n}^{i+n} \beta^{\abs{j-i}} s_j}{\sum\limits_{\alpha=-n}^n \beta^{\abs{\alpha}}},
 \end{align}
 where a window size of seven pixels gives $n=3$ and the decay factor gives $\beta = 0.9$.
 
-\subsection{Taper Spectra}
 
-Spectra tapering (also known as a window function or apodization) is required to remove ringing from a Fourier transform of the signal and smooth discontinuities. Both the generic and quasar spectra are tapered, and the means is via a sixty pixel sinusoid taper with five pixels of zero padding. \textcolor{red}{REMOVE ZERO PADDING SEE IF ANYTHING CHANGES}. The front taper can be described thus:
+Finally, both the generic and quasar spectra undergo tapering (also known as a window function or apodization), which is required to remove ringing from a Fourier transform of the signal and smooth discontinuities. Tapering is achieved via a sixty pixel sinusoid taper with five pixels of zero padding. \textcolor{red}{REMOVE ZERO PADDING SEE IF ANYTHING CHANGES}. The front taper can be described thus:
 
 
 \begin{align}
@@ -885,29 +892,86 @@ The normalised cross correlation data then undergoes peak selection, in which pe
 \brac{c_i \geq c_{i+1}} \land \brac{c_i \geq c_{i+2}} \land \brac{c_i > c_{i-1}} \land \brac{c_i > c_{i-2}}.
 \end{align}
 
-Data peaks then had a quadratic fitted over that 5 pixel window, and the maximum value of the fitted quadratic, along with its effective index, is set to as the detected peak. The final list of peaks for the template matched is then returned.
+Data peaks then had a quadratic fitted over that 5 pixel window, and the maximum value of the fitted quadratic, along with its effective index, is set to as the detected peak. Given that the domain after inverse transformation is in the original wavelength domain, a peak at index $i$ from the centre pixel represents a redshift of 
+
+\begin{align}
+z = \brac{10^{iN} (1+z_0)} - 1,
+\end{align}
+
+where $N$ is the Angstrom gap between adjacent pixels in the equispaced log scale and $z_0$ is the initial redshift of the provided template.
 
 \subsection{Coalescing Peak Results}
 
-applying weights, combining peaks, sorting, converting to redshift, rounding to 5 decimal places, ensuring redshift difference threshold
+Each of the templates generates a list of peak values, and these are required to be coalesced into a single output stream before being returned as the list of top results. The first step in this process is apply peak weighting, where the provided object type of the spectra acts as a prior to the peak selection. These priors - the result of previous data gathering and photometric estimates, provide types that range from Supernova hosts, to Cluster Galaxies, Radio Galaxies, Emission Line Galaxies, Stars and Active Galactic Nuclei (quasars). Each template has a set of weights for each prior, and these weights are multiplied by the peak height in order to determine an adjusted peak strength.
+
+After combining the weighted peak results for all templates into a singular list of peaks, the result is sorted, redshift values are rounded to five decimal places, and the best five results are return to the client interface thread, where they become visible to the user.
 
 \textcolor{red}{NEED TO FINISH ACTUALLY DOING THIS.}
+
+\section{Performance} \label{sec:performance}
+
+The final performance of the matching algorithm is shown graphically in Figure \ref{fig:final}. 
+
+
+\begin{figure}[ht!]
+\includegraphics[width=0.8\textwidth]{images/final.png} 
+\centering
+\caption{Comparison of manual redshifts with automatically determined redshifts by the unweighted $\chi^2$ algorithm and by the two algorithms in use with \runz{}. The fifteen iteration of matching algorithm is shown.}
+\label{fig:final}
+\end{figure}
+
 
 
 
 \section{Alternate Implementations}
 
-talk about chi2
+A simpler matching algorithm was investigated during the early stages of this project, which utilised $\chi^2$ matching instead of cross correlation. This algorithm involved similar steps of continuum subtraction, but instead of cross correlating templates, each template had the $\chi^2$ difference calculated for a range of redshift values, such that 
+
+\begin{align}
+\chi^2_z = \sum\limits_i \brac{\frac{s_i - t_{iz}}{v_i}}^2,
+\end{align}
+
+where $s_i$ is the spectra at index $i$, $t_i$ is the template at index $i$ after redshifting the template by value $z$ and $v_i$ is the error spectrum at index $i$. Performance of this implementation is discussed in \ref{sec:performance}, and attempted to increase performance of the $\chi^2$ results to acceptable levels ultimately did not succeed to the extent where the cross correlation performance could be matched. A modified $\chi^2$ system was also investigated, such that 
+
+\begin{align}
+\chi^2_z = \sum\limits_i \brac{\frac{w_i\brac{s_i - t_{iz}}}{v_i}}^2,
+\end{align}
+
+where $w_i$ is a weight vector used to control the significance of specific pixels. Analysis was conducted with the weight vector set to the template intensity, the spectra intensity, the square root of the spectra intensity, and the product of the spectra and template intensity, with minimal improvement in results.
+
+The largest problem with the $\chi^2$ implementation was dealing with non-complete spectra overlaps, an example of which is provided in Figure \ref{fig:overlap}. More formally, difficulty arose in how to include in the $\chi^2$ sum terms in which $t_{iz}$ did not exist. Not including the terms resulted in far lower $\chi^2$ terms for maximally shifted templates regardless of whether or not the maximal redshift values were a valid match or not. Commonly, the reduced $\chi^2$ is used to determine a goodness of fit \textcolor{red}{SOURCE THIS BITCH UP}, where $\chi_{\text{red}}^2 = \chi^2 / N$, where $N$ is the number of elements in the sum. However, this was still not an adequate solution as template normalisation before taking the $\chi^2$ difference was designed such that the template would be scaled to give the minimum $\chi^2$ result, and thus even the reduced $\chi^2$ for minimally overlapping spectra continued to beat the $\chi^2$ result of the correct match for many spectra.
+
+\begin{figure}[ht!]
+\includegraphics[width=0.4\textwidth]{images/overlap.png} 
+\centering
+\caption{An example match in which the template spectra does not overlap the observed spectra, with the spectra shown only matching the template for approximately half of the spectra pixels.}
+\label{fig:overlap}
+\end{figure}
+
+The redshifts in which minimal overlap results in erroneous matches can clearly be seen as vertical lines in Figure \ref{fig:vertical}. The most promising method of reducing the goodness of fit of minimally overlapping spectra was found to be in calculating a reduced $\chi^2$ using instead of the standard $r = N$, where $r$ is the reduction factor (where $N$ is the number of data points matched), a reduction factor of $r = \brac{\sum_{i=1}^N s_i}^{5/2}$ was used. This value simply represents the sum of all the spectra points that were used in the $\chi^2$ calculation raised to the power of $5/2$. The power factor of $5/2$ has no rigorous theoretical foundation, it was simply found that squaring the sum of the weights provided insufficient disadvantage to minimal overlaps, and cubing the sum punished overlaps to a greater extent than desired such that no spectra with any overlap would ever be returned as the best match. Comparison between Figures \ref{fig:vertical} and \ref{fig:novertical} show the decrease in vertical banding when the power of the weight sum was changed from $2$ to $5/2$.
+
+\begin{figure}[ht!]
+\includegraphics[width=0.7\textwidth]{images/Fullv4-ReweightedChi2.png} 
+\centering
+\caption{Comparison of manual redshifts with automatically determined redshifts by the unweighted $\chi^2$ algorithm and by the two algorithms in use with \runz{}. The fourth iteration of the reweighted $\chi^2$ matching algorithm is shown here, which used $w_i = \sqrt{\abs{s_i}}$ and $r = \brac{\sum_{i=1}^N s_i}^{2}$. Vertical result banding is found at redshifts in several places, most obviously the strong banding at approximately $z=1$, which corresponds to minimal overlap of galaxy templates.}
+\label{fig:vertical}
+\end{figure}
+
+\begin{figure}[ht!]
+\includegraphics[width=0.7\textwidth]{images/Fullv1-BasicChi2.png} 
+\centering
+\caption{Comparison of manual redshifts with automatically determined redshifts by the unweighted $\chi^2$ algorithm and by the two algorithms in use with \runz{}. The first iteration of the $\chi^2$ matching algorithm is shown here, which used $w_i = \sqrt{\abs{s_i}}$ and $r = \brac{\sum_{i=1}^N s_i}^{5/2}$. Vertical result banding is still present at approximately $z=1$, which corresponds to minimal overlap of the galaxy templates, however it is decreased in intensity relative to Figure \ref{fig:vertical}.}
+\label{fig:novertical}
+\end{figure}
+
+I better solution than a tailored reduction factor would be to simply increase the template lengths so that high redshift matches still have a significant portion of spectra and template overlap. Unfortunately, the only templates found in research that went to sufficiently low wavelengths that overlap was no longer a problem were too low resolution to use for spectrographic analysis. It was suggested by Professor Karl Glazebrook of Swinburne University to investigate BC12, PEGASE-HR or the Conroy models, however this has not been done to date given the success of the cross correlation algorithm with the existing templates.
 
 \section{Problems Encountered}
 
-file manager storage, lack of js libraries, 5mb system limit, inability to detect cpu cores, slowness of code before refactor, requirement to redo the interface, go through github issues
+file manager storage, lack of js libraries, 5mb system limit, inability to detect cpu cores, slowness of code before refactor, requirement to redo the interface, go through github issues, templates
 
 Talk about EVERYTHINGGGGGGG
 
-\chapter{Performance}
-
-put in those cool charts
 
 
 
