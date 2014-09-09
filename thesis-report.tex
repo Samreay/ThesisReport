@@ -780,7 +780,7 @@ The processing algorithm is responsible for presenting the end user with a spect
 
 \subsection{Removing Bad Pixels}
 
-A pixel is determined to be bad if it satisfies any of a number of criteria, which are as follows: if the spectra or variance is not a number or is null, if the variance is negative, or if the spectra intensity is greater or less than specific thresholds. If a pixel matches that criteria, it's intensity and variance is replaced with a mean over a window before and after pixel.
+A pixel is determined to be bad if it satisfies any of a number of criteria, which are as follows: if the spectra or variance is not a number or is null, if the variance is negative, or if the spectra intensity is greater or less than specific thresholds. If a pixel matches that criteria, it's intensity and variance is replaced with a mean over a window before and after pixel where only good pixels in the window are considered in the average.
 
 This process can be described mathematically via the following formula, where $s_i$ represents the $i$th element of the spectra, $v_i$ represents the $i$th element of the spectra variance, and $n$ is the floored half window width, such that a window of nine pixels (value currently in use) would give $n=4$.
 \begin{align}
@@ -906,11 +906,11 @@ Each of the templates generates a list of peak values, and these are required to
 
 After combining the weighted peak results for all templates into a singular list of peaks, the result is sorted, redshift values are rounded to five decimal places, and the best five results are return to the client interface thread, where they become visible to the user.
 
-\textcolor{red}{NEED TO FINISH ACTUALLY DOING THIS.}
+\textcolor{red}{NEED TO FINISH ACTUALLY DOING THIS. HAVE NOT DONE QUADRATIC FIT YET}
 
 \section{Performance} \label{sec:performance}
 
-The final performance of the matching algorithm is shown graphically in Figure \ref{fig:final}. 
+The final performance of the matching algorithm is shown graphically in Figure \ref{fig:final}. Figure \ref{fig:final} and other similar figures throughout this document, unless otherwise specified, are created from by comparing manual redshift estimates with automatic redshift estimates from a collection of data files provided by Conor O'Neill and provides over a thousand different spectra, with many spectra available for more than one observation time (such that multiple observations of the same object are stacked to increase the signal to noise ratio). 
 
 \textcolor{red}{ELABORATE ON THIS AFTER ACTUALLY FINALISING.}
 
@@ -918,13 +918,13 @@ The final performance of the matching algorithm is shown graphically in Figure \
 \begin{figure}[ht!]
 \includegraphics[width=0.8\textwidth]{images/final.png} 
 \centering
-\caption{Comparison of manual redshifts with automatically determined redshifts by the unweighted $\chi^2$ algorithm and by the two algorithms in use with \runz{}. The fifteen iteration of matching algorithm is shown.}
+\caption{Comparison of manual redshifts with automatically determined redshifts by the unweighted $\chi^2$ algorithm and by the two algorithms in use with \runz{}. The sixteenth iteration of matching algorithm is shown.}
 \label{fig:final}
 \end{figure}
 
 
 
-
+\pagebreak
 \section{Alternate Implementations}
 
 A simpler matching algorithm was investigated during the early stages of this project, which utilised $\chi^2$ matching instead of cross correlation. This algorithm involved similar steps of continuum subtraction, but instead of cross correlating templates, each template had the $\chi^2$ difference calculated for a range of redshift values, such that 
@@ -953,14 +953,14 @@ The largest problem with the $\chi^2$ implementation was dealing with non-comple
 The redshifts in which minimal overlap results in erroneous matches can clearly be seen as vertical lines in Figure \ref{fig:vertical}. The most promising method of reducing the goodness of fit of minimally overlapping spectra was found to be in calculating a reduced $\chi^2$ using instead of the standard $r = N$, where $r$ is the reduction factor (where $N$ is the number of data points matched), a reduction factor of $r = \brac{\sum_{i=1}^N s_i}^{5/2}$ was used. This value simply represents the sum of all the spectra points that were used in the $\chi^2$ calculation raised to the power of $5/2$. The power factor of $5/2$ has no rigorous theoretical foundation, it was simply found that squaring the sum of the weights provided insufficient disadvantage to minimal overlaps, and cubing the sum punished overlaps to a greater extent than desired such that no spectra with any overlap would ever be returned as the best match. Comparison between Figures \ref{fig:vertical} and \ref{fig:novertical} show the decrease in vertical banding when the power of the weight sum was changed from $2$ to $5/2$.
 
 \begin{figure}[ht!]
-\includegraphics[width=0.7\textwidth]{images/Fullv4-ReweightedChi2.png} 
+\includegraphics[width=0.6\textwidth]{images/Fullv4-ReweightedChi2.png} 
 \centering
 \caption{Comparison of manual redshifts with automatically determined redshifts by the unweighted $\chi^2$ algorithm and by the two algorithms in use with \runz{}. The fourth iteration of the reweighted $\chi^2$ matching algorithm is shown here, which used $w_i = \sqrt{\abs{s_i}}$ and $r = \brac{\sum_{i=1}^N s_i}^{2}$. Vertical result banding is found at redshifts in several places, most obviously the strong banding at approximately $z=1$, which corresponds to minimal overlap of galaxy templates.}
 \label{fig:vertical}
 \end{figure}
 
 \begin{figure}[ht!]
-\includegraphics[width=0.7\textwidth]{images/Fullv1-BasicChi2.png} 
+\includegraphics[width=0.6\textwidth]{images/Fullv1-BasicChi2.png} 
 \centering
 \caption{Comparison of manual redshifts with automatically determined redshifts by the unweighted $\chi^2$ algorithm and by the two algorithms in use with \runz{}. The first iteration of the $\chi^2$ matching algorithm is shown here, which used $w_i = \sqrt{\abs{s_i}}$ and $r = \brac{\sum_{i=1}^N s_i}^{5/2}$. Vertical result banding is still present at approximately $z=1$, which corresponds to minimal overlap of the galaxy templates, however it is decreased in intensity relative to Figure \ref{fig:vertical}.}
 \label{fig:novertical}
@@ -968,7 +968,20 @@ The redshifts in which minimal overlap results in erroneous matches can clearly 
 
 I better solution than a tailored reduction factor would be to simply increase the template lengths so that high redshift matches still have a significant portion of spectra and template overlap. Unfortunately, the only templates found in research that went to sufficiently low wavelengths that overlap was no longer a problem were too low resolution to use for spectrographic analysis. It was suggested by Professor Karl Glazebrook of Swinburne University to investigate BC12, PEGASE-HR or the Conroy models, however this has not been done to date given the success of the cross correlation algorithm with the existing templates.
 
+\pagebreak
 \section{Problems Encountered}
+
+The decision to implement the thesis project in the most restricted, sandboxed and difficult language to work with certainly has benefits in accessibility and as a proof-of-concept for accessible scientific analysis via web applications, has caused a multitude of problems during development.
+
+Perhaps the largest disadvantage to the web application approach is the security sandboxing which restricts all access to the client's file system unless the click explicitly passes a file into the web browser via drag-and-drop or a file upload dialogue. Part of the desired workflow for the thesis project was to designate a folder as the workspace, and automatically load in all FITs files, with their results, directly from this folder. Easily possible in any other language, this would require a user selecting the entire contents of the folder to be used every time they opened the web application. A HTML5 feature of the FileSystem API was going to be used to allow access to a restricted portion of the client's file system, however after development was begun, the FileSystem API development had to be discontinued and removed after Mozilla and Microsoft decided not to implement the API in April 2014 \cite{filesystem}. With this API gone, the only viable option was to have users manually select FITs files to upload to the web application for processing themselves.
+
+The lack of file system access also complicated two other tasks apart from loading in FITs files: saving results and loading in results. Issues with saving results arise from the fact users download files off the web by the browser detecting HTTP headers on server response packets and recognising that the incoming response is a file to download rather than a web page to display. With no server side component to simulate such packets, and no ability to directly write to the while system, an alternate method of saving results had to be implemented. Whilst the HTML5 specification for the File Writer API does include the ability to save files from the client \cite{save1}, current browser implementation is not backwards compatible and is thus not sufficient for the task. A Javasciprt library, called FileSaver.js and written by Eli Grey, has implemented backwards compatibility for saving files \cite{save2}, and has thus been included as a library in the thesis project to allow downloading of text files in the client browser. Loading in of results was initially done the same way as loading a FITs file - drag-and-drop, however the ease at which a user could forget to drag in the results file and the extra step it added caused significant confusion in user testing. As such, it was decided that file results should never leave the browser, and with the availability of HTML5 local storage, up to five megabytes could be dedicated per site in the form of key-value data pairs \cite{local}. To minimise the space required to save the results, only the very final result for each spectra is saved (as opposed to saving the top five best matches for example). The local storage has a wrapper service written so that the oldest spectra are pruned out when approaching the five megabyte limit, however this would require having redshifted thousands of spectra before hitting this limit.
+
+The last large browser based impediment encountered was an inability to detect the number of CPU cores on client computers. As spectra matching and preprocessing done on separate threads in the background, accurate detection of the number of CPU cores is a requirement for redshifting spectra as fast as possible. Luckily, as of September 2, 2014, Google Chrome (version 37) implemented the \verb+navigator.hardwareConcurrency+ method \cite{chrome1,chrome2} which allows access to the number of logical processors in the clients machine. Prior to September, the number of cores had to be manually set on the settings page.
+
+Scores of hours have also been dedicated to what should have been a simple task - page navigation. Whilst the chosen AngularJS routing plugin (UI Router) performed to specification, the redrawing of all page content on navigation causes a severe muli-second freeze when navigating back to the Overview page for large FITs files (as it requires up to 800 plots to be redrawn for a 400 spectra file). Whilst this problem was solved early in the development of the application by using manual page routing, an application refactor and redesign saw the issue arise again. \textcolor{red}{PUT STUFF IN HERE WHEN YOU ACTUALLY FIX THE PROBLEM AGAIN}
+
+The final large impediment encountered was organising the templates. The full template catalogue before refinement included all \runz{} templates, including those added by the WiggleZ cosmology team, and the Sloan Digital Sky Survey (SDSS) team. 
 
 file manager storage, lack of js libraries, 5mb system limit, inability to detect cpu cores, slowness of code before refactor, requirement to redo the interface, go through github issues, templates
 
