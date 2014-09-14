@@ -879,29 +879,29 @@ where $p$ represents the zero padding width ($p=5$), and $w$ represents the tape
 
 \subsection{Error Adjustment}
 
-Error adjustment is only applied to the generic templates, and involves three steps: broadening error, median adjustment and division of the spectrum by the variance squared. In the first step, error is broadened over adjacent pixels, such that for all point in the variance spectrum $v_i$, 
+Variance modification is only applied to the generic templates, and involves three steps: broadening variance, median adjustment and division of the spectrum by the variance squared. To account of subpixel differences in sky subtraction, variance is first broadened over adjacent neighbour pixels, such that for all point in the variance spectrum $v_i$, 
 
 \begin{align}
 v_i = \mathrm{max}(v_{i-1}, v_i, v_{i+1}).
 \end{align}
 
-After this, the error for each point is adjusted to be the maximum between the current value, and 0.7 times the median of a 13 pixel window centred around the pixel in question, such that
+After this, to remove pixels that have variance far below their neighbours, the error for each point is adjusted to be the maximum between the current value, and 0.7 times the median of a 13 pixel window centred around the pixel in question, such that
 
 \begin{align}
 v_i = \mathrm{max}\brac{v_i, 0.7\cdot \median\{v_{i-n}:v_{i+n}\}}.
 \end{align}
 
-This error adjustment serves to account for subpixel differences in sky subtraction and to increase error on pixels that have far lower error than their neighbours. After this error adjustment, the spectrum was divided by the error spectrum squared as justified by Saunders \etal \cite{saunders2004improvements}, such that for all $s_i,\ s_i = s_i \cdot v_i^{-2}$.
+After this variance adjustment, I divided the intensity spectrum by the variance spectrum squared as justified by Saunders \etal \cite{saunders2004improvements} in order to down-weight pixels with greater variance, such that for all $s_i,\ s_i = s_i \cdot v_i^{-2}$.
 
 This step was not implemented on the quasar template, as the variance in the error spectrum meant that diving by the variance squared polluted the broad peaks to such an extent that they were unmatchable. Instead, the quasar spectrum does not consider spectrum error, as the broadness of the peaks means that individual uncertainty on a pixel basis is unimportant to the final result.
 
 \subsection{Normalisation and Cross Correlation} \label{sec:transform}
 
-Both the generic and quasar spectrum undergo RMS normalisation such that $s_i = s_i \sigma^{-1}$ before undergoing cross correlation. Both spectrum are then oversampled and rebinned in an equispaced log array of $32\;768$ elements from the range $10^{2.8}$ to $10^{4.3}$, where those exponent values are chosen to allow for the full redshift range for each template. Both spectrum are then Fourier transformed into the frequency domain.
+Both the generic and quasar spectrum undergo RMS normalisation such that $s_i = s_i \sigma^{-1}$ before undergoing cross correlation. Both spectrum are then oversampled and rebinned in an equispaced logarithmic array of $32\;768$ elements from the range $10^{2.8}$ to $10^{4.3}$, where those exponent values are chosen to allow for the full redshift range for each template. Both spectrum are then Fourier transformed into the frequency domain.
 
-The template catalogue, upon program initialisation, also undergoes the preprocessing described in previous sections (where the quasar template takes the place of the quasar spectrum, and all other templates take the place of the generic spectrum), and they are rebinned as well, transformed, and conjugated.
+The template catalogue, upon program initialisation, also undergoes the preprocessing described in previous sections (where the quasar template takes the place of the quasar spectrum, and all other templates take the place of the generic spectrum), and they are rebinned as well, transformed in the frequency domain, and the complex result is conjugated.
 
-The transformed generic spectrum is then multiplied with the non-quasar templates, inverse transformed, circularly shifted half the size of the inverse array length and a subsection of the results are returned, where the subsection is determined by the allowed redshift ranges of each specific template. These pruned results then have a rejected mean subtracted, such that the average of the all points bar the greatest 4\% is subtracted from the results, and then are normalised using their RMS value, just as the spectrum were normalised before Fourier transformation.
+The transformed generic spectrum is then multiplied with the non-quasar transformed templates, inverse transformed, circularly shifted half the size of the inverse array length and a subsection of the results are returned, where the subsection is determined by the allowed redshift ranges of each specific template. These results of this selection then have a rejected mean subtracted, where the mean is defined as the average value of all but the greatest 4\% of points. The subtracted values are then are normalised using their RMS value, just as the original intensity spectrum was normalised before Fourier transformation.
 
 \subsection{Peak Selection}
 
