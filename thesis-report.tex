@@ -905,13 +905,13 @@ The transformed generic spectrum is then multiplied with the non-quasar transfor
 
 \subsection{Peak Selection}
 
-The normalised cross correlation data then undergoes peak selection, in which peaks are identified over a five pixel window, such that for the cross correlation values $c_i$, an index $i$ is identified as a peak if and only if
+The normalised cross correlation data then undergoes peak selection, in which peaks are identified over a five pixel window, such that for the cross correlation values $c_i$, an index $i$ is identified as a peak if it was greater than its four nearest neighbours (2 pixels to either side), formally defined as satisfying the criteria of
 
 \begin{align}
 \brac{c_i \geq c_{i+1}} \land \brac{c_i \geq c_{i+2}} \land \brac{c_i > c_{i-1}} \land \brac{c_i > c_{i-2}}.
 \end{align}
 
-Data peaks then had a quadratic fitted over that 5 pixel window, and the maximum value of the fitted quadratic, along with its effective index, is set to as the detected peak. Given that the domain after inverse transformation is in the original wavelength domain, a peak at index $i$ from the centre pixel represents a redshift of 
+Cross correlation peaks then had a quadratic fitted over that 5 pixel window, and the maximum value of the fitted quadratic, along with its effective index, is set to as the detected peak. Given that the domain after inverse transformation is in the original wavelength domain, a peak at index $i$ from the centre pixel represents a redshift of 
 
 \begin{align}
 z = \brac{10^{iN} (1+z_0)} - 1,
@@ -921,7 +921,7 @@ where $N$ is the Angstrom gap between adjacent pixels in the equispaced log scal
 
 \subsection{Coalescing Peak Results}
 
-Each of the templates generates a list of peak values, and these are required to be coalesced into a single output stream before being returned as the list of top results. The first step in this process is apply peak weighting, where the provided object type of the spectrum acts as a prior to the peak selection. These priors - the result of previous data gathering and photometric estimates, provide types that range from Supernova hosts, to Cluster Galaxies, Radio Galaxies, Emission Line Galaxies, Stars and Active Galactic Nuclei (quasars). Each template has a set of weights for each prior, and these weights are multiplied by the peak height in order to determine an adjusted peak strength.
+Each of the templates generates a list of peak values, and these are required to be coalesced into a single output stream before being returned as the list of top results. The first step in this process is apply peak weighting, where the provided object type of the spectrum acts as a prior to the peak selection. Objects without prior assigned types are not weighted. These priors - the result of previous data gathering and photometric estimates, provide types that range from Supernova hosts, to Cluster Galaxies, Radio Galaxies, Emission Line Galaxies, Stars and Active Galactic Nuclei (quasars). Each template has a set of weights for each prior, and these weights are multiplied by the peak height in order to determine an adjusted peak strength.
 
 After combining the weighted peak results for all templates into a singular list of peaks, the result is sorted, redshift values are rounded to five decimal places, and the best five results are return to the client interface thread, where they become visible to the user.
 
@@ -952,7 +952,7 @@ A simpler matching algorithm was investigated during the early stages of this pr
 \chi^2_z = \sum\limits_i \brac{\frac{s_i - t_{iz}}{v_i}}^2,
 \end{align}
 
-where $s_i$ is the spectrum at index $i$, $t_i$ is the template at index $i$ after redshifting the template by value $z$ and $v_i$ is the error spectrum at index $i$. Performance of this implementation is discussed in \ref{sec:performance}, and attempted to increase performance of the $\chi^2$ results to acceptable levels ultimately did not succeed to the extent where the cross correlation performance could be matched. A modified $\chi^2$ system was also investigated, such that 
+where $s_i$ is the spectrum at index $i$, $t_i$ is the template at index $i$ after redshifting the template by value $z$ and $v_i$ is the error spectrum at index $i$. Performance of this implementation is discussed in \ref{sec:performance}, and my attempts to increase performance of the $\chi^2$ results to acceptable levels ultimately did not succeed to the extent where the cross correlation performance could be matched. A modified $\chi^2$ system was also investigated, such that 
 
 \begin{align}
 \chi^2_z = \sum\limits_i \brac{\frac{w_i\brac{s_i - t_{iz}}}{v_i}}^2,
@@ -960,10 +960,10 @@ where $s_i$ is the spectrum at index $i$, $t_i$ is the template at index $i$ aft
 
 where $w_i$ is a weight vector used to control the significance of specific pixels. Analysis was conducted with the weight vector set to the template intensity, the spectrum intensity, the square root of the spectrum intensity, and the product of the spectrum and template intensity, with minimal improvement in results.
 
-The largest problem with the $\chi^2$ implementation was dealing with non-complete spectrum overlaps, an example of which is provided in Figure \ref{fig:overlap}. More formally, difficulty arose in how to include in the $\chi^2$ sum terms in which $t_{iz}$ did not exist. Not including the terms resulted in far lower $\chi^2$ terms for maximally shifted templates regardless of whether or not the maximal redshift values were a valid match or not. Commonly, the reduced $\chi^2$ is used to determine a goodness of fit \textcolor{red}{SOURCE THIS BITCH UP}, where $\chi_{\text{red}}^2 = \chi^2 / N$, where $N$ is the number of elements in the sum. However, this was still not an adequate solution as template normalisation before taking the $\chi^2$ difference was designed such that the template would be scaled to give the minimum $\chi^2$ result, and thus even the reduced $\chi^2$ for minimally overlapping spectrum continued to beat the $\chi^2$ result of the correct match for many spectrum.
+The largest problem with the $\chi^2$ implementation was dealing with non-complete spectrum overlaps, an example of which is provided in Figure \ref{fig:overlap}. More formally, difficulty arose in how to include in the $\chi^2$ sum terms in which $t_{iz}$ did not exist. Not including the terms resulted in far lower $\chi^2$ terms for maximally shifted templates regardless of whether or not the maximal redshift values were a valid match or not. Commonly, the reduced $\chi^2$ is used to determine a goodness of fit \cite{Glover}, where $\chi_{\text{red}}^2 = \chi^2 / N$, where $N$ is the number of elements in the sum. However, this was still not an adequate solution as template normalisation before taking the $\chi^2$ difference was designed such that the template would be scaled to give the minimum $\chi^2$ result, and thus even the reduced $\chi^2$ for minimally overlapping spectrum continued to beat the $\chi^2$ result of the correct match for many spectrum.
 
 \begin{figure}[ht!]
-\includegraphics[width=0.4\textwidth]{images/overlap.png} 
+\includegraphics[width=0.5\textwidth]{images/overlap.png} 
 \centering
 \caption{An example match in which the template spectrum does not overlap the observed spectrum, with the spectrum shown only matching the template for approximately half of the spectrum pixels.}
 \label{fig:overlap}
@@ -972,20 +972,20 @@ The largest problem with the $\chi^2$ implementation was dealing with non-comple
 The redshifts in which minimal overlap results in erroneous matches can clearly be seen as vertical lines in Figure \ref{fig:vertical}. The most promising method of reducing the goodness of fit of minimally overlapping spectrum was found to be in calculating a reduced $\chi^2$ using instead of the standard $r = N$, where $r$ is the reduction factor (where $N$ is the number of data points matched), a reduction factor of $r = \brac{\sum_{i=1}^N s_i}^{5/2}$ was used. This value simply represents the sum of all the spectrum points that were used in the $\chi^2$ calculation raised to the power of $5/2$. The power factor of $5/2$ has no rigorous theoretical foundation, it was simply found that squaring the sum of the weights provided insufficient disadvantage to minimal overlaps, and cubing the sum punished overlaps to a greater extent than desired such that no spectrum with any overlap would ever be returned as the best match. Comparison between Figures \ref{fig:vertical} and \ref{fig:novertical} show the decrease in vertical banding when the power of the weight sum was changed from $2$ to $5/2$.
 
 \begin{figure}[ht!]
-\includegraphics[width=0.6\textwidth]{images/Fullv4-ReweightedChi2.png} 
+\includegraphics[width=0.9\textwidth]{images/Fullv4-ReweightedChi2.png} 
 \centering
 \caption{Comparison of manual redshifts with automatically determined redshifts by the unweighted $\chi^2$ algorithm and by the two algorithms in use with \runz{}. The fourth iteration of the reweighted $\chi^2$ matching algorithm is shown here, which used $w_i = \sqrt{\abs{s_i}}$ and $r = \brac{\sum_{i=1}^N s_i}^{2}$. Vertical result banding is found at redshifts in several places, most obviously the strong banding at approximately $z=1$, which corresponds to minimal overlap of galaxy templates.}
 \label{fig:vertical}
 \end{figure}
 
 \begin{figure}[ht!]
-\includegraphics[width=0.6\textwidth]{images/Fullv1-BasicChi2.png} 
+\includegraphics[width=0.9\textwidth]{images/Fullv1-BasicChi2.png} 
 \centering
 \caption{Comparison of manual redshifts with automatically determined redshifts by the unweighted $\chi^2$ algorithm and by the two algorithms in use with \runz{}. The first iteration of the $\chi^2$ matching algorithm is shown here, which used $w_i = \sqrt{\abs{s_i}}$ and $r = \brac{\sum_{i=1}^N s_i}^{5/2}$. Vertical result banding is still present at approximately $z=1$, which corresponds to minimal overlap of the galaxy templates, however it is decreased in intensity relative to Figure \ref{fig:vertical}.}
 \label{fig:novertical}
 \end{figure}
 
-I better solution than a tailored reduction factor would be to simply increase the template lengths so that high redshift matches still have a significant portion of spectrum and template overlap. Unfortunately, the only templates found in research that went to sufficiently low wavelengths that overlap was no longer a problem were too low resolution to use for spectroscopic analysis. It was suggested by Professor Karl Glazebrook of Swinburne University to investigate BC12, PEGASE-HR or the Conroy models, however this has not been done to date given the success of the cross correlation algorithm with the existing templates.
+A better solution than a tailored reduction factor would be to simply increase the template lengths so that high redshift matches still have a significant portion of spectrum and template overlap. Unfortunately, the only templates found in research that went to sufficiently low wavelengths that overlap was no longer a problem were too low resolution to use for spectroscopic analysis. It was suggested by Professor Karl Glazebrook of Swinburne University to investigate BC12, PEGASE-HR or the Conroy models, however this has not been done to date given the success of the cross correlation algorithm with the existing templates.
 
 \pagebreak
 \section{Problems Encountered}
@@ -1002,8 +1002,6 @@ Scores of hours have also been dedicated to what should have been a simple task 
 
 The final large impediment encountered was organising the templates. The full template catalogue before refinement included all \runz{} templates, including those added by the WiggleZ cosmology team, and the Sloan Digital Sky Survey (SDSS) team. The large number of templates from the combined catalogues required a subset to be picked out that was representative of the objects being investigated, and this was done collaboratively with Tamara Davis, David Parkinson and Chris Lidman at the OzDES Busy Week gathering. In addition to this selection, problems with the template ranges (discussed in the previous section) were an impediment to high quality $\chi^2$ matching, and wider ranging templates of sufficient resolution could not be located. Finally, the largest template (the quasar template) was broken into pieces in the \runz{} application, and had to be manually stitched together and undergo manual normalisation in order to tune relative peak heights to achieve the greatest matching rate.
 
-Talk about EVERYTHINGGGGGGG
-
 
 
 
@@ -1019,17 +1017,16 @@ Talk about EVERYTHINGGGGGGG
 
 \begin{table}[ht!]
 	\center
-	\begin{tabular}{c|c|c}
+	\begin{tabular}{|c|c|c|}
 		\hline
 		Feature & Complete & Incomplete \\
 		\hline
 		Surface Capture & \gtick & \\
-		Human interface (Control Panel) & \gtick & full UI synchronisation between multiple clients \\
+		Human interface (Control Panel) & \gtick & ple clients \\
 		External control interface (RPC) & \gtick & \\
-		Configurable (JSON Keystore) & \gtick & More settings should be user configurable \\
-		Real-time Computer Vision for \newline Block Diagram recognition & \gtick & \\
-		Block Diagram Model output \newline (MQTT Publish/Subscribe) & \gtick & \\
-		\ldots & & \\
+		ConSON Keystore) & \gtick & More settinurable \\
+		Riagram recognition & \gtick & \\
+		Block Diadel output \newline (MQTT Pubbscribe) & \gtick & \\
 		Digital Logic Adapter & & \rcross \\
 		Minimalist Digital Logic Simulator & & \rcross \\
 		\hline
@@ -1041,21 +1038,7 @@ Talk about EVERYTHINGGGGGGG
 \newpage
 %\clearpage
 
-\section{Performance}
 
-Talk about performance
-
-\begin{description}
-	\item[Network] - For a 1080p image cropped to approximately 50\% of its width and height, the jpeg frame size after base64 encoding is approximately 60KB. At a nominal frame rate of 5FPS, this gives 2.4mbps bandwidth for video, which is quite manageable on local networks. A blocsim server intended for remote access over the web should be constrained to a lower frame rate using the UI controls.
-	\item[CPU] - This has not been extensively tested. On a MacBook Pro Retina with a 2.4GHz i5 processor, 8GB RAM, and integrated Intel graphics, the server ran at approximately 70\% CPU usage with one client attached (local). This is acceptable for personal use on a modern middle-range computer. 
-	\item[Frame Rate] - At a full 1080p on the above system, BlocSim was able to maintain image processing at the speed-limited 5FPS.
-\end{description}
-
-
-\section{Design Decisions}
-\label{ch:review:design}
-
-Talk about design decisions
 
 \section{Future Improvement}
 
