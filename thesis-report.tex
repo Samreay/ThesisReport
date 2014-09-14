@@ -177,6 +177,11 @@ Spectrographs provide accurate redshifting due to prominent discernible features
 \label{fig:emission}
 \end{figure}
 
+\section{Spectrum types}
+
+\textcolor{red}{ADD SOME SPECTRA, QUASARS< EMISSION TYPES, ETC.}
+
+
 \section{Common Complications}
 
 High quality spectrum, with well defined and multiple emission features, such as shown in Figure \ref{fig:emission}, become progressively less common with increasing redshift, due to increasing distance to emission object and thus lower light intensity. As such, redshifting algorithms have to employ data reduction and matching techniques specifically designed to marginalise potential error and account of known complications. In this section, several complications to the redshifting process that have been actively encountered in this thesis will be discussed. Ideas on how to marginalise or reduce these complications will be discussed in the implementation section of this thesis. The OzDES data workflow currently includes a separate data reduction pipeline which aims to account for many of these factors in the data before being sent for redshifting to reduce data traffic and thus lower network overhead, however a lack of finalisation in the data reduction pipeline's capabilities means that all major concerns will be detailed in this section.
@@ -783,13 +788,13 @@ The settings page is also a page outside of usage for the redshifting process. I
 \pagebreak
 \section{Processing algorithm}
 
-The processing algorithm is responsible for presenting the end user with a spectrum to manually redshift as quickly as possible, with defects such as blanks and cosmic rays automatically removed, and to have the spectrum available with and without continuum. \textcolor{red}{CITE IVAN BALDRY AND WHERE HE GOT HIS STUFF FROM AS WELL}.
+The processing algorithm is responsible for presenting the end user with a visual representation of a spectrum to manually redshift as quickly as possible, with defects such as blanks and cosmic rays automatically removed, and to have the spectrum available with and without continuum. Many steps in the processing and matching algorithms are based of the algorithms written by Ivan Baldry \cite{baldry2014galaxy}. Each spectrum contains two data arrays, containing the intensity (amplitude) values and variance respectively.
 
 \subsection{Removing Bad Pixels}
 
-A pixel is determined to be bad if it satisfies any of a number of criteria, which are as follows: if the spectrum or variance is not a number or is null, if the variance is negative, or if the spectrum intensity is greater or less than specific thresholds. If a pixel matches that criteria, it's intensity and variance is replaced with a mean over a window before and after pixel where only good pixels in the window are considered in the average.
+A pixel is determined to be bad if it satisfies any of a number of criteria, which are as follows: if the spectrum intensity or variance is not a number or is null, if the variance is negative, or if the spectrum intensity is greater or less than specific thresholds. If a pixel matches those criteria, it's intensity and variance is replaced with a mean over a window before and after pixel where only good pixels in the window are considered in the average.
 
-This process can be described mathematically via the following formula, where $s_i$ represents the $i$th element of the spectrum, $v_i$ represents the $i$th element of the spectrum variance, and $n$ is the floored half window width, such that a window of nine pixels (value currently in use) would give $n=4$.
+This process can be described mathematically via the following formula, where $s_i$ represents the $i$th element of the spectrum intensity, $v_i$ represents the $i$th element of the spectrum variance, and $n$ is the floored half window width, such that a window of nine pixels (value currently in use) would give $n=4$.
 \begin{align}
 s_i &= 
 \begin{cases}
@@ -799,12 +804,12 @@ s_i &=
 \text{such that } f(i) &= \brac{s_i > 10^6} \vee \brac{s_i <  -\left(10^4\right)} \vee \brac{v_i < 0} \vee \brac{s_i \notin \mathbb{R}} \vee \brac{v_i \notin \mathbb{R}}.
 \end{align} 
 
-Whilst the equation above deals with the spectrum $s_i$, an identical procedure is followed for the variance as well.
+Whilst the equation above deals with the spectrum amplitude $s_i$, an identical procedure is followed for the variance as well.
 
 \pagebreak
 \subsection{Removing Cosmic Rays}
 
-Cosmic rays are detected via flagging points more than thirty standard deviations from the mean and the maximum neighbouring point. Points that satisfy these criteria are replaced with a average intensity over a window to either side such that only points less than thirty standard deviations from the mean are considered part of the average. The variance for these points is set to a maximal value, currently set as $10^{10}$. The large variance results in the points being removed from consideration in the non-quasar cross correlation process later on, and so the averaging of the spectrum intensity is used only for quasar matching and so that users undergoing manual redshifting are provided with a visually clean spectrum. The window size for averaging is set to five, such that $n = 2$.
+Cosmic rays are detected via flagging points more than thirty standard deviations from the mean and the maximum neighbouring point. Points that satisfy these criteria are replaced with a average intensity over a window to either side such that only points less than thirty standard deviations from the mean are considered part of the average. The variance for these points is set to a maximal value, currently set as $10^{10}$, which has the effect of marginalising the pixel contribution to cross correlation when it is eventually performed. The window size for averaging is set to five, such that $n = 2$.
 
 \begin{align}
 s_i &= 
@@ -818,52 +823,59 @@ v_i &=
 	v_i & \text{otherwise}
 \end{cases}\\
 \text{such that } f(i) &= \brac{\abs{s_i - \mean{s_i}} > 30 \sigma}, \\
-\text{and } g(i) &= \brac{max\brac{\abs{s_i - s_{i-1}}, \abs{s_i - s_{i+1}}} > 30 \sigma}
+\text{and } g(i) &= \brac{max\brac{\abs{s_i - s_{i-1}}, \abs{s_i - s_{i+1}}} > 30 \sigma}.
 \end{align} 
-
-
-\textcolor{red}{HAVE YET TO FINALISE THIS, GRRRR}.
 
 
 \subsection{Removing Continuum} \label{sec:continuum}
 
 Continuum is subtracted from the spectrum via the means of rejected polynomial fitting. A six degree polynomical is fitted to the spectrum, and any points more than 3.5 standard deviations from the fitted polynomial are removed from consideration. A new polynomial is fitted to the remaining points, and points greater than 3.5 standard deviations are again rejected. Iterations stop after a maximum number of fifteen iterations or until all points are within 3.5 standard deviations of the polynomial. The rejections serve the purpose of conforming the polynomial to the actual continuum so that no warping of the fit occurs to try and match strong features and emission lines.
 
-Continuum subtraction for the raw data (as opposed to the process above) is simply done via a six degree fitted polynomial subtraction, and thus the processed continuum removal of rejected polynomial fitting provides a significant improvement over the raw data continuum subtraction.
+
 
 \section{Matching algorithm}
 
-After removing bad pixels, cosmic rays and continuum subtraction, the spectrum is duplicated, one to undergo quasar matching, and the other to match other templates, and these copies will be referred to as the generic and quasar spectrum. Each step of the algorithm in this section will explicitly clarify whether or not it applies to the quasar or generic spectrum (or both).
+After removing bad pixels, cosmic rays and continuum subtraction, the spectrum is duplicated, one to undergo quasar matching, and the other to match other templates, referred to as the generic and quasar spectrum respectively. The generic spectrum is used to match the group of non-quasar templates, and the quasar spectrum is used only to match the quasar template.
 
 \subsection{Further preprocessing}
 
-Further continuum subtraction applies to only the generic spectrum. This second step of continuum subtraction applies a median filter of width 51 pixels and then boxcar smoothing of 121 pixels and subtracts this result from the spectrum to further remove continuum. This step is not applied to the quasar template as the broad peaks of the quasar template that this step removes are matching features and not continuum details.\\
+Further continuum subtraction applies to only the generic spectrum. This second step of continuum subtraction generates a median filter of width 51 pixels (25 pixels to either side of the target pixel) and then applies boxcar smoothing of 121 pixels onto the generate median filter results, where a typical AAOmega spectrum is comprised of 4941 pixels. The result of the boxcar smoothing is subtracted from the spectrum intensity to further remove continuum. This step is not applied to the quasar template as the broad peaks of the quasar template get subtracted out. Figure \ref{fig:smooth} shows the spectra intensity before and after subtraction, with the median filter with and without smoothing also illustrated.\\
+\begin{figure}[ht!]
+\includegraphics[width=\textwidth]{images/smoothing.eps} 
+\centering
+\caption{The final process of continuum subtraction is shown, with the smoothed median filter to be subtracted shown in the top subplot.}
+\label{fig:smooth}
+\end{figure}
 
-\textcolor{red}{THIS SEEMS SIMPLE ENOUGH NOT TO NEED MATHS.}
 
-
-
-The quasar template, instead of having the second step of continuum subtraction applied, instead smooths the spectrum. In order to smooth out broad features but preserve pixel peak location, a seven pixel window  decaying mean filter is applied with a decay factor of 0.9. As the generic spectrum matches on narrow emission and absorption features, it would negatively impact matching performance to smooth those features, unlike the broad quasar features. Formally, for each point in the quasar spectrum $s_i$, 
+The quasar template, instead of having the second step of continuum subtraction applied, instead smooths the spectrum. In order to smooth out broad features but preserve pixel peak location, a seven pixel window decaying mean filter is applied with a decay factor of 0.9. As the generic spectrum matches on narrow emission and absorption features, it would negatively impact matching performance to smooth those features, unlike the broad quasar features. Formally, for each point in the quasar spectrum $s_i$, 
 
 \begin{align}
 s_i = \frac{\sum\limits_{j = i -n}^{i+n} \beta^{\abs{j-i}} s_j}{\sum\limits_{\alpha=-n}^n \beta^{\abs{\alpha}}},
 \end{align}
-where a window size of seven pixels gives $n=3$ and the decay factor gives $\beta = 0.9$.
+where a window size of seven pixels gives $n=3$ and the decay factor gives $\beta = 0.9$. The quasar spectrum before and after this process is shown in Figure \ref{fig:quasar}.
+
+\begin{figure}[ht!]
+\includegraphics[width=1\textwidth]{images/quasarAverage.eps} 
+\centering
+\caption{Smoothing of the quasar spectrum via application of a decaying mean filter.}
+\label{fig:quasar}
+\end{figure}
 
 
-Finally, both the generic and quasar spectrum undergo tapering (also known as a window function or apodization), which is required to remove ringing from a Fourier transform of the signal and smooth discontinuities. Tapering is achieved via a sixty pixel sinusoid taper with five pixels of zero padding. \textcolor{red}{REMOVE ZERO PADDING SEE IF ANYTHING CHANGES}. The front taper can be described thus:
+Finally, both the generic and quasar spectrum undergo tapering (also known as a window function or apodization), which is required to remove ringing from a Fourier transform  of the signal and smooth discontinuities. The transformation of the spectrum is discussed in section \ref{sec:transform}. Tapering is achieved via a sixty pixel sinusoid taper with five pixels of zero padding. The front taper can be described thus:
 
 
 \begin{align}
 s_i &= 
 \begin{cases}
-	0 & \text{if } i < z \\
-	s_i \sin\brac{\frac{\pi (i-z)}{2w}} & \text{if } i < (z+w) \\
+	0 & \text{if } i < p \\
+	s_i \sin\brac{\frac{\pi (i-p)}{2w}} & \text{if } i < (p+w) \\
 	s_i & \text{otherwise},
 \end{cases}
 \end{align} 
 
-where $z$ represents the zero padding width ($z=5$), and $w$ represents the taper width ($w=60$). \textcolor{red}{GET SOURCES ON THIS.}
+where $p$ represents the zero padding width ($p=5$), and $w$ represents the taper width ($w=60$).
 
 \subsection{Error Adjustment}
 
@@ -883,7 +895,7 @@ This error adjustment serves to account for subpixel differences in sky subtract
 
 This step was not implemented on the quasar template, as the variance in the error spectrum meant that diving by the variance squared polluted the broad peaks to such an extent that they were unmatchable. Instead, the quasar spectrum does not consider spectrum error, as the broadness of the peaks means that individual uncertainty on a pixel basis is unimportant to the final result.
 
-\subsection{Normalisation and Cross Correlation}
+\subsection{Normalisation and Cross Correlation} \label{sec:transform}
 
 Both the generic and quasar spectrum undergo RMS normalisation such that $s_i = s_i \sigma^{-1}$ before undergoing cross correlation. Both spectrum are then oversampled and rebinned in an equispaced log array of $32\;768$ elements from the range $10^{2.8}$ to $10^{4.3}$, where those exponent values are chosen to allow for the full redshift range for each template. Both spectrum are then Fourier transformed into the frequency domain.
 
