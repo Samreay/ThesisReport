@@ -179,7 +179,26 @@ Spectrographs provide accurate redshifting due to prominent discernible features
 
 \section{Spectrum types}
 
-\textcolor{red}{ADD SOME SPECTRA, QUASARS< EMISSION TYPES, ETC.}
+The OzDES survey focuses on extragalactic objects at high redshifts, meaning that there is a heavy focus on galactic and quasar templates and less emphasis on stellar objects. Three templates are shown in Figure \ref{fig:types} that each highlight the different spectroscopic features produced by different cosmological objects.
+
+Template six shows an early type absorption galaxy, and as the name suggests, this sort of galaxy is easily identifiable by its strong absorption features. The strong double absorption troughs seen at the first numerical label is the Potassium-Hydrogen absorption pair, and this well known feature can even be found in the late type emission galaxy spectrum between numbers three and four. Other absorption features can easily be identified on this template, with another sharp trough identified at the second point of interest, which is the sodium absorption line.
+
+The late type emission galaxy detailed as template eight is a high-quality (high signal-to-noise) emission line spectrum. The doubly ionized oxygen peak can be seen at point three, and the three peaks illustrated at point four are respectively the Hydrogen-$\beta$ line and the triply ionized Oxygen doublet. Perhaps the liens of greatest use when redshifting an emission line spectrum is the cluster of peaks at the fifth numerical label. The first collection of peaks is the strong Hydrogen-$\alpha$ line and the weaker $N_2$ line, and they are found in the vast majority of emission spectra due to the abundance of Hydrogen throughout the universe. The right hand side doublet of peaks comes from the diatomic sulphur molecule S2. Identification of simply the cluster of peaks at point five is sufficient to be able to redshift an emission spectrum to a high level of confidence.
+
+\begin{figure}[ht!]
+\includegraphics[width=1\textwidth]{images/types.png} 
+\centering
+\caption{Template spectra for three different object types commonly observed. Please see surrounding text for elaboration on numerical labels.}
+\label{fig:types}
+\end{figure}
+
+The final template spectrum included in this example is that of a quasar, which can also be known as active galactic nuclei (AGN). The main characteristics of quasars are their broad emission peaks, which come about due to the extreme temperatures of active galactic nuclei. Point six on Figure \ref{fig:types} shows the strong Lyman-$\alpha$ peak from Hydrogen overlapping with the N$_5$ peak just to the right. This peak is typically by far the brightest, and the template shown in the figure has had the peak heights adjusted so that all of them remain clear and visible. Point seven on the figure shows the strong Magnesium-II emission line, and the cluster of peaks found at point eight corresponds to the same Hydrogen-$\beta$ and the triply ionized Oxygen doublet shown at point four for the emission line galaxy template.
+
+It can be seen in these templates that a singular peak can often fit many different potential emission lines, and in fact mis-identifying normally strong emission lines, such as the OII line and the H$\alpha$ line, is the largest source of failure when redshifting \cite{Drinkwater21012010}. This is why the set of four peaks shown at label five is so valuable when redshifting - it massively reduces the chance of catastrophic failure when estimating a redshift. The absence of secondary peaks to confirm redshift estimates is a problem more pronounced in quasars, where the limited wavelength range of the spectrograph can mean that only one well defined emission line can be present. This most commonly occurs with the isolated MgII line shown at point seven, due to the lack of strong features in the immediate vicinity of that solitary peak. Whilst a human may possess the pattern matching abilities to deduce the right redshift for a spectrum in which only a singular peak occurs, this is a task of difficulty for matching algorithms.
+
+
+
+
 
 
 \section{Common Complications}
