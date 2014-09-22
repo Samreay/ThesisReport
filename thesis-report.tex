@@ -942,22 +942,31 @@ where $N$ is the Angstrom gap between adjacent pixels in the equispaced log scal
 
 Each of the templates generates a list of peak values, and these are required to be coalesced into a single output stream before being returned as the list of top results. The first step in this process is apply peak weighting, where the provided object type of the spectrum acts as a prior to the peak selection. Objects without prior assigned types are not weighted. These priors - the result of previous data gathering and photometric estimates, provide types that range from Supernova hosts, to Cluster Galaxies, Radio Galaxies, Emission Line Galaxies, Stars and Active Galactic Nuclei (quasars). Each template has a set of weights for each prior, and these weights are multiplied by the peak height in order to determine an adjusted peak strength.
 
-After combining the weighted peak results for all templates into a singular list of peaks, the result is sorted, redshift values are rounded to five decimal places, and the best five results are return to the client interface thread, where they become visible to the user.
-
-\textcolor{red}{NEED TO FINISH ACTUALLY DOING THIS. HAVE NOT DONE QUADRATIC FIT YET}
+After combining the weighted peak results for all templates into a singular list of peaks, the result is sorted, redshift values are rounded to five decimal places, and the best five results are return to the client interface thread, where they become visible to the user. \textcolor{red}{NEED TO FINISH ACTUALLY DOING THIS. HAVE NOT DONE QUADRATIC FIT YET}
 
 \section{Performance} \label{sec:performance}
 
 The final performance of the matching algorithm is shown graphically in Figure \ref{fig:final}. Figure \ref{fig:final} and other similar figures throughout this document, unless otherwise specified, are created from by comparing manual redshift estimates with automatic redshift estimates from a collection of data files provided by Conor O'Neill and provides over a thousand different spectrum, with many spectrum available for more than one observation time (such that multiple observations of the same object are stacked to increase the signal to noise ratio). 
 
-\textcolor{red}{ELABORATE ON THIS AFTER ACTUALLY FINALISING.}
 
 
 \begin{figure}[ht!]
-\includegraphics[width=0.8\textwidth]{images/final.png} 
+\includegraphics[width=0.95\textwidth]{images/final.eps} 
 \centering
-\caption{Comparison of manual redshifts with automatically determined redshifts by the unweighted $\chi^2$ algorithm and by the two algorithms in use with \runz{}. The sixteenth iteration of matching algorithm is shown.}
+\caption{Comparison of manual redshifts with automatically determined redshifts by the unweighted $\chi^2$ algorithm and by the two algorithms in use with \runz{}. Accuracy is shown in total, and then with sub totals split for spectra less than and greater than $z=1$.}
 \label{fig:final}
+\end{figure}
+
+Figure \ref{fig:final} shows a clear increase in the matching effectiveness of my thesis software over the prexisting algorithms of \runz{}, with the largest improvements being in the area of quasar template matching, shown in the figure as the matches above a redshift of one. This is thought to be  due to the alternate quasar matching algorithm implemented to specifically deal with the broad features of quasars, and the vast improvement on the quasar template which came amount by manually stitching redshift ranges together and manually normalising the template spectrum.
+
+
+After an expression of interest in the thesis project by Chris Blake, leader of the new 2dFLenS survey \cite{2dFLenS}, I tested my thesis software on sample 2dFLenS data, which differs from the OzDES data in that the target objects are closer and therefore have higher signal-to-noise ratio. In addition, the close proximity of the 2dFLenS survey means that many stellar spectra are expected with few quasars, the opposite of the OzDES expectations. As such, this sample data provided a valuable way to test my software on a varied data source. The results are shown in Figure \ref{fig:2dF}. It is important to note too that a score of 100\% is not expected, as this assumes that the manual results are fully correct. As such, the result of 97\% accuracy attained by my thesis project is close to the maximum expected, and certainly demonstrates far higher matching accuracy than either of the \runz{} algorithms used in the past.
+
+\begin{figure}[ht!]
+\includegraphics[width=0.95\textwidth]{images/2df.eps} 
+\centering
+\caption{Comparison of manual redshifts with automatically determined redshifts by \runz{} and the thesis software developed for sample 2dFLenS data. The accuracy of the developed software far exceeds that of the existing code solution, \runz{}.}
+\label{fig:2dF}
 \end{figure}
 
 
