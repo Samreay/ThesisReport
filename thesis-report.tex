@@ -1,7 +1,6 @@
 \documentclass[titlesmallcaps, examinerscopy, copyrightpage]{uqthesis}
 
 \bibliographystyle{customIEEEtran}
-
 \usepackage[usenames,dvipsnames]{color}
 \usepackage[square,comma,numbers,sort&compress]{natbib}
 \usepackage{pdfpages}
@@ -28,10 +27,12 @@
   numbered, 
   open,
 }
+\usepackage{epstopdf}
 
 \makeglossaries
 \renewcommand*{\glossaryentrynumbers}[1]{}
 
+\newcommand{\thesisname}{\textsc{Marz}}
 \newcommand{\tick}{\checkmark}
 \newcommand{\gtick}{\color{ForestGreen} \tick }
 \newcommand{\cross}{$\times$ }
@@ -114,9 +115,11 @@ I would like to thank my supervisors, Tamara Davis, Vaughan Clarkson and Chris L
 
 \chapter{Abstract}
 
-I AM THE ABSTRACT
+This thesis details the development of redshifting software, \thesisname{}, primarily for the OzDES cosmology team as a replacement for the existing legacy \runz{} codebase. Strict requirements on ease of installation, upgrading and usability lead to the development of the thesis software as an HTML5 web application, and the final automated matching algorithm utilises cross correlation template matching for accurate redshifting.
 
+An alternate minimum $\chi^2$ matching algorithm was implemented and later discarded due to poorer performance than the cross correlation method. Comparison of the cross correlation algorithm against both the emission line matching and cross correlation algorithms found in \runz{} showed unambiguously better matching performance for both low signal-to-noise data and high signal-to-noise data. High signal-to-noise data, from the 2dFLenS survey, gave a 97\% matching success rate at a confidence level of 99\%, as contrasted to the 66\% matching rate of the best performing \runz{} algorithm. Low signal-to-noise data, from the OzDES survey, showed a similar improvement in matching efficiency over \runz{}, with a success rate of 79\% compared to 32\%. High redshift matching showed the greatest improvement over \runz{}, with the new software matching 60\% of $z>1$ spectra, whilst \runz{} was unable to match any spectra in that range.
 
+Given the demonstrated accuracy of automatic matching, ease of use of the software and hassle free installation, \thesisname{} presents a viable alternative and step forward from existing redshifting solutions.
 \cleardoublepage
 \hypersetup{pageanchor=true}
 \pdfbookmark[chapter]{Table of Contents}{toc}
@@ -177,13 +180,38 @@ Spectrographs provide accurate redshifting due to prominent discernible features
 \label{fig:emission}
 \end{figure}
 
+
+\section{Spectrum Confidence}
+
+When assigning a redshift to a given spectrum, a confidence interval has to be assigned to the result. Following previous surveys lead by researchers from the University of Queensland, an integer confidence interval is assigned to all results, with the quality rubric being described by Table \ref{tab:qop}.
+
+\begin{table}[h]
+\centering
+\caption{Redshift quality definitions, from the WiggleZ survey \cite{Drinkwater21012010}}
+\begin{tabular}{ll}
+\hline
+QOP &  Description                                                                                                      \\
+\hline
+1             & No redshift was possible; highly noisy spectra                                                                   \\
+2             & An uncertain redshift was assigned.                                                                              \\
+3             & A reasonably confident redshift; if based on {[}OII{]} alone, \\
+& then the doublet is resolved or partially resolved \\
+4             & A redshift that has multiple (obvious) emission lines all in agreement.                                          \\
+6              & Reserved for Galactic stars used as calibration sources \\
+\hline                                                    
+\end{tabular}
+\label{tab:qop}
+\end{table}
+
+
+
 \section{Spectrum types}
 
 The OzDES survey focuses on extragalactic objects at high redshifts, meaning that there is a heavy focus on galactic and quasar templates and less emphasis on stellar objects. Three templates are shown in Figure \ref{fig:types} that each highlight the different spectroscopic features produced by different cosmological objects.
 
 Template six shows an early type absorption galaxy, and as the name suggests, this sort of galaxy is easily identifiable by its strong absorption features. The strong double absorption troughs seen at the first numerical label is the Potassium-Hydrogen absorption pair, and this well known feature can even be found in the late type emission galaxy spectrum between numbers three and four. Other absorption features can easily be identified on this template, with another sharp trough identified at the second point of interest, which is the sodium absorption line.
 
-The late type emission galaxy detailed as template eight is a high-quality (high signal-to-noise) emission line spectrum. The doubly ionized oxygen peak can be seen at point three, and the three peaks illustrated at point four are respectively the Hydrogen-$\beta$ line and the triply ionized Oxygen doublet. Perhaps the liens of greatest use when redshifting an emission line spectrum is the cluster of peaks at the fifth numerical label. The first collection of peaks is the strong Hydrogen-$\alpha$ line and the weaker $N_2$ line, and they are found in the vast majority of emission spectra due to the abundance of Hydrogen throughout the universe. The right hand side doublet of peaks comes from the diatomic sulphur molecule S2. Identification of simply the cluster of peaks at point five is sufficient to be able to redshift an emission spectrum to a high level of confidence.
+The late type emission galaxy detailed as template eight is a high-quality (high signal-to-noise) emission line spectrum. The doubly ionized oxygen peak can be seen at point three, and the three peaks illustrated at point four are respectively the Hydrogen-$\beta$ line and the triply ionized Oxygen doublet.
 
 \begin{figure}[ht!]
 \includegraphics[width=1\textwidth]{images/types.png} 
@@ -352,7 +380,7 @@ When looking at cross correlation techniques, it can be seen that similarities i
 Currently the OzDES team is using legacy software called \runz{} to perform redshift estimates. This software provides two separate matching algorithms, respectively using cross correlation and feature matching similar to the RVSAO 2.0 software package. Similar to the 2dF software, the user can select a manual redshift if unsatisfied with the best automatically determined redshifts. Users can find manual redshifts by virtue of marking spectral features as specific transitions via a simplistic visual interface illustrated in Figure \ref{fig:runz}, and can then perform a tightly constrained  automatic fit to shift the selection to the maximum cross correlation. The OzDES team is seeking replacement software due not only to the low accuracy of the automatic redshifting algorithm in \runz{}, but also due to the legacy nature of the software, which requires various archaic dependencies, C-shell, in addition to a steep learning curve. Modifying \runz{} to address these issues is not desired due to the unfortunate state of the code base after over a decade of revisions and additions. The next chapter will state the requirements of any replacement software in order to address the current disadvantages and issues relating to the installation and use of the current \runz{} software program.
 
 \begin{figure}[ht!]
-\includegraphics[width=1\textwidth]{images/RunzScreen.PNG} 
+\includegraphics[width=0.9\textwidth]{images/RunzScreen.PNG} 
 \centering
 \caption{A screenshot of the \runz{} application in use. The four top plots represent detailed callout sections, with the full spectrum shown in white in the bottom plot. The perspective template to match to is shown in green in all plots. The red line through the image serves as the cursor for \runz{}, where spectral lines are marked at the current cursor via keyboard shortcuts, which are displayed in a background terminal window to which \runz{} displays output.}
 \label{fig:runz}
@@ -745,8 +773,8 @@ The detailed page is where users review automatic redshifts and manually redshif
 \item \textbf{spectral Lines:} A large part of manual matching is to mark spectral lines. This can be done by selecting a point on the graph, and then clicking on one of the available spectral lines. The line will be marked at the location selected, and the redshift determined from the marked wavelength with respect to the rest frame wavelength of the spectral line.
 \item \textbf{Zoom Out:} As users can zoom into parts of the graph via clicking and dragging a window, this button allows users to zoom out to see the entire spectrum again.
 \item \textbf{Graph Canvas:} The rest of the page area is given to canvas space. At the top of the canvas, any visible spectrum lines are marked, and a fixed pixel width grid is displayed to the user.
-\item \textbf{spectrum Plot:} The top plot shown is the observed spectrum currently with a smoothing window of five pixels. Four broad quasar peaks are clearly visible in this spectrum.
-\item \textbf{spectral Line Markers:} By default, all spectral lines are shown to the user, although they can be hidden via a ``Hide spectral lines" button (a blue button directly to the right of the the number 10 label). Line positions are determined via the current redshift, and scrolling through redshift details will therefore also scroll the positions of these lines, making it easier to match features.
+\item \textbf{Spectrum Plot:} The top plot shown is the observed spectrum currently with a smoothing window of five pixels. Four broad quasar peaks are clearly visible in this spectrum.
+\item \textbf{Spectral Line Markers:} By default, all spectral lines are shown to the user, although they can be hidden via a ``Hide spectral lines" button (a blue button directly to the right of the the number 10 label). Line positions are determined via the current redshift, and scrolling through redshift details will therefore also scroll the positions of these lines, making it easier to match features.
 \item \textbf{Template Plot:} The template plot is shown in red. The currently selected template is a quasar at redshift approximately 1.84, as shown in the template and redshift inputs (labels 8 and 9 respectively).
 \end{enumerate}
 
@@ -848,8 +876,15 @@ v_i &=
 
 \subsection{Removing Continuum} \label{sec:continuum}
 
-Continuum is subtracted from the spectrum via the means of rejected polynomial fitting. A six degree polynomical is fitted to the spectrum, and any points more than 3.5 standard deviations from the fitted polynomial are removed from consideration. A new polynomial is fitted to the remaining points, and points greater than 3.5 standard deviations are again rejected. Iterations stop after a maximum number of fifteen iterations or until all points are within 3.5 standard deviations of the polynomial. The rejections serve the purpose of conforming the polynomial to the actual continuum so that no warping of the fit occurs to try and match strong features and emission lines.
+Continuum is subtracted from the spectrum via the means of rejected polynomial fitting. A six degree polynomical is fitted to the spectrum, and any points more than 3.5 standard deviations from the fitted polynomial are removed from consideration. A new polynomial is fitted to the remaining points, and points greater than 3.5 standard deviations are again rejected. Iterations stop after a maximum number of fifteen iterations or until all points are within 3.5 standard deviations of the polynomial. The rejections serve the purpose of conforming the polynomial to the actual continuum so that no warping of the fit occurs to try and match strong features and emission lines. Figure \ref{fig:polyfit} shows an example spectrum before and after rejected polynomial fit subtraction.
 
+
+\begin{figure}[ht!]
+\includegraphics[width=0.7\textwidth]{images/polyfit.eps} 
+\centering
+\caption{A galaxy spectrum from the 2dFLenS survey showing the difference before and after continuum subtraction via a rejected polynomial fit.}
+\label{fig:polyfit}
+\end{figure}
 
 
 \section{Matching algorithm}
@@ -942,7 +977,13 @@ where $N$ is the Angstrom gap between adjacent pixels in the equispaced log scal
 
 Each of the templates generates a list of peak values, and these are required to be coalesced into a single output stream before being returned as the list of top results. The first step in this process is apply peak weighting, where the provided object type of the spectrum acts as a prior to the peak selection. Objects without prior assigned types are not weighted. These priors - the result of previous data gathering and photometric estimates, provide types that range from Supernova hosts, to Cluster Galaxies, Radio Galaxies, Emission Line Galaxies, Stars and Active Galactic Nuclei (quasars). Each template has a set of weights for each prior, and these weights are multiplied by the peak height in order to determine an adjusted peak strength.
 
-After combining the weighted peak results for all templates into a singular list of peaks, the result is sorted, redshift values are rounded to five decimal places, and the best five results are return to the client interface thread, where they become visible to the user. \textcolor{red}{NEED TO FINISH ACTUALLY DOING THIS. HAVE NOT DONE QUADRATIC FIT YET}
+After combining the weighted peak results for all templates into a singular list of peaks, the result is sorted, peak values selected via a quadratic fit around the maximal point and two nearest neighbours on either side. The peak value redshift values are rounded to five decimal places, and the best five results are return to the client interface thread, where they become visible to the user.
+
+
+
+
+
+
 
 \section{Performance} \label{sec:performance}
 
@@ -951,19 +992,19 @@ The final performance of the matching algorithm is shown graphically in Figure \
 
 
 \begin{figure}[ht!]
-\includegraphics[width=0.95\textwidth]{images/final.eps} 
+\includegraphics[width=0.85\textwidth]{images/final.eps} 
 \centering
 \caption{Comparison of manual redshifts with automatically determined redshifts by the unweighted $\chi^2$ algorithm and by the two algorithms in use with \runz{}. Accuracy is shown in total, and then with sub totals split for spectra less than and greater than $z=1$.}
 \label{fig:final}
 \end{figure}
 
-Figure \ref{fig:final} shows a clear increase in the matching effectiveness of my thesis software over the prexisting algorithms of \runz{}, with the largest improvements being in the area of quasar template matching, shown in the figure as the matches above a redshift of one. This is thought to be  due to the alternate quasar matching algorithm implemented to specifically deal with the broad features of quasars, and the vast improvement on the quasar template which came amount by manually stitching redshift ranges together and manually normalising the template spectrum.
+Figure \ref{fig:final} shows a clear increase in the matching effectiveness of my thesis software over the prexisting algorithms of \runz{}, with the largest improvements being in the area of quasar template matching, shown in the figure as the matches above a redshift of one. This is thought to be  due to the alternate quasar matching algorithm implemented to specifically deal with the broad features of quasars, and the vast improvement on the quasar template which came amount by manually stitching redshift ranges together and manually normalising the template spectrum. The failure rate for the new algorithm, 21\% for this data set, was found to be significantly less than the 68\% failure rate for the best \runz{} algorithm, providing good incentive to move away from the \runz{} application.
 
 
-After an expression of interest in the thesis project by Chris Blake, leader of the new 2dFLenS survey \cite{2dFLenS}, I tested my thesis software on sample 2dFLenS data, which differs from the OzDES data in that the target objects are closer and therefore have higher signal-to-noise ratio. In addition, the close proximity of the 2dFLenS survey means that many stellar spectra are expected with few quasars, the opposite of the OzDES expectations. As such, this sample data provided a valuable way to test my software on a varied data source. The results are shown in Figure \ref{fig:2dF}. It is important to note too that a score of 100\% is not expected, as this assumes that the manual results are fully correct. As such, the result of 97\% accuracy attained by my thesis project is close to the maximum expected, and certainly demonstrates far higher matching accuracy than either of the \runz{} algorithms used in the past.
+After an expression of interest in the thesis project by Chris Blake, leader of the 2dFLenS survey \cite{2dFLenS}, I tested my thesis software on sample 2dFLenS data, which differs from the OzDES data in that the target objects are closer and therefore have higher signal-to-noise ratio. In addition, the close proximity of the 2dFLenS survey means that many stellar spectra are expected with very few expected quasars, the opposite of the OzDES expectations. As such, this sample data provided a valuable way to test my software on a varied data source. The results are shown in Figure \ref{fig:2dF}. At the 99\% confidence interval, a result of 97\% indicates only one in fifty spectra are misidentified, demonstrating far higher matching accuracy than either of the \runz{} algorithms used in the past. When comparing the best \runz{} algorithm to the new thesis algorithm, it can be seen that for high signal-to-noise data, the redshift failure rate (3\% vs 36\%) is twelve times lower. Rephrased, a researcher (for this data set and at the 99\% confidence interval) has to do twelve times manual redshifting, representing a significant reduction in the manual labour required to completely redshift an observation run.
 
 \begin{figure}[ht!]
-\includegraphics[width=0.95\textwidth]{images/2df.eps} 
+\includegraphics[width=0.85\textwidth]{images/2df.eps} 
 \centering
 \caption{Comparison of manual redshifts with automatically determined redshifts by \runz{} and the thesis software developed for sample 2dFLenS data. The accuracy of the developed software far exceeds that of the existing code solution, \runz{}.}
 \label{fig:2dF}
@@ -1014,8 +1055,8 @@ The redshifts in which minimal overlap results in erroneous matches can clearly 
 \end{figure}
 
 A better solution than a tailored reduction factor would be to simply increase the template lengths so that high redshift matches still have a significant portion of spectrum and template overlap. Unfortunately, the only templates found in research that went to sufficiently low wavelengths that overlap was no longer a problem were too low resolution to use for spectroscopic analysis. It was suggested by Professor Karl Glazebrook of Swinburne University to investigate BC12, PEGASE-HR or the Conroy models, however this has not been done to date given the success of the cross correlation algorithm with the existing templates.
-
-\pagebreak
+\vspace{30mm}
+\newpage
 \section{Problems Encountered}
 
 The decision to implement the thesis project in the most restricted, sandboxed and difficult language to work with certainly has benefits in accessibility and as a proof-of-concept for accessible scientific analysis via web applications, has caused a multitude of problems during development.
@@ -1026,7 +1067,7 @@ The lack of file system access also complicated two other tasks apart from loadi
 
 The last large browser based impediment encountered was an inability to detect the number of CPU cores on client computers. As spectrum matching and preprocessing done on separate threads in the background, accurate detection of the number of CPU cores is a requirement for redshifting spectrum as fast as possible. Luckily, as of September 2, 2014, Google Chrome (version 37) implemented the \verb+navigator.hardwareConcurrency+ method \cite{chrome1,chrome2} which allows access to the number of logical processors in the clients machine. Prior to September, the number of cores had to be manually set on the settings page.
 
-Scores of hours have also been dedicated to what should have been a simple task - page navigation. Whilst the chosen AngularJS routing plugin (UI Router) performed to specification, the redrawing of all page content on navigation causes a severe muli-second freeze when navigating back to the Overview page for large FITs files (as it requires up to 800 plots to be redrawn for a 400 spectrum file). Whilst this problem was solved early in the development of the application by using manual page routing, an application refactor and redesign saw the issue arise again. \textcolor{red}{PUT STUFF IN HERE WHEN YOU ACTUALLY FIX THE PROBLEM AGAIN}
+Scores of hours have also been dedicated to what should have been a simple task - page navigation. Whilst the chosen AngularJS routing plugin (UI Router) performed to specification, the redrawing of all page content on navigation causes a severe muli-second freeze when navigating back to the Overview page for large FITs files (as it requires up to 800 plots to be redrawn for a 400 spectrum file).
 
 The final large impediment encountered was organising the templates. The full template catalogue before refinement included all \runz{} templates, including those added by the WiggleZ cosmology team, and the Sloan Digital Sky Survey (SDSS) team. The large number of templates from the combined catalogues required a subset to be picked out that was representative of the objects being investigated, and this was done collaboratively with Tamara Davis, David Parkinson and Chris Lidman at the OzDES Busy Week gathering. In addition to this selection, problems with the template ranges (discussed in the previous section) were an impediment to high quality $\chi^2$ matching, and wider ranging templates of sufficient resolution could not be located. Finally, the largest template (the quasar template) was broken into pieces in the \runz{} application, and had to be manually stitched together and undergo manual normalisation in order to tune relative peak heights to achieve the greatest matching rate.
 
@@ -1036,49 +1077,52 @@ The final large impediment encountered was organising the templates. The full te
 
 \chapter{Project Evaluation}
 
+Original project proposals for this thesis project involved OzDES specific modifications to the \runz{} code base in order to both improve matching ability for high redshift targets and increase the amount of objects that could be matched to. However, the legacy nature of the \runz{} software, and the effect of twenty years of sporadic development by researchers made the prospective of continuing development in the \runz{} code base extremely undesirable.
 
+My decision to start from scratch and develop an alternative solution gave me much more freedom in design choices, however it drastically increased the workload of the thesis. However, given the positive results obtained with the developed thesis software, I believe this was the correct decision.
 
 
 \section{Completion}
 
+In terms of feature completion in the final project, I believe the main objectives of ease of installation, usability and matching efficiency have definitely been met.
 
+Informal user testing (which occurred when I travelled to NSW for a week in an OzDES Busy Week) revealed that all researchers were able to immediately open the website and begin redshifting without a tutorial session or personal walk-through. I do not believe this is due to having perfected the interface, but simply by not trying to reinvent the wheel. All interface elements in the final software are ones that would be commonly encountered in regular websites, and most interactive components in the interface have their purpose clearly displayed in text.
 
-\begin{table}[ht!]
-	\center
-	\begin{tabular}{|c|c|c|}
-		\hline
-		Feature & Complete & Incomplete \\
-		\hline
-		Surface Capture & \gtick & \\
-		Human interface (Control Panel) & \gtick & ple clients \\
-		External control interface (RPC) & \gtick & \\
-		ConSON Keystore) & \gtick & More settinurable \\
-		Riagram recognition & \gtick & \\
-		Block Diadel output \newline (MQTT Pubbscribe) & \gtick & \\
-		Digital Logic Adapter & & \rcross \\
-		Minimalist Digital Logic Simulator & & \rcross \\
-		\hline
-	\end{tabular}
-	\caption{Feature completion for BlocSim prototype}
-	\label{tab:completion}
-\end{table} 
-
-\newpage
-%\clearpage
-
+Matching efficiency for high signal-to-noise data exceeded expectations, however I was disappointed I could not get a higher accuracy for the low signal-to-noise. However, given the lack of research expertise I have, and the inability to develop the application full time, I still believe my current results far exceed the initial expectations of the OzDES team when I started the project.
 
 
 \section{Future Improvement}
 
-Talk about what could be done in the future.
-% =====================================================================
+There are still several missing features (such as callout sections on the main graph) that have been requested by some OzDES members. More importantly, it would be beneficial to add a merging screen in to the application, where multiple researchers' results can be merged into one file. The current method of doing this (a command line python script where
+merge conflicts are resolved line by line) is painstaking and slow, meaning it would be another area for easy improvement by my software.
+
+The other potential area of functional improvement is in post processing the peak values of the cross correlation results in order to get better matches. An example of this would be to implement an algorithm that can detect features, and, using suggested redshifts, identify the features and then use extra astronomical information (such as the ratio between two common features) to identify cross correlation peaks that are more likely to be correct.
+
+It would also be interesting to apply redshift priors on results based on object classification, where object classification could be achieved via a machine learning algorithm. This would be a task beyond the capacity of browsers however, and require a server backend to be constructed to generate and train the machine learning system.
+
+Priors could also be gathered by looking at previous spectroscopic and photometric redshift estimates if they exist for the objects. This would require communication with database servers and locating objects based on their location in the sky, and applying a suitable prior to the peak selection step in the matching algorithm.
+
+Other non-research areas of improvement in the program would be integration with the OzDES database and server system. At the moment, FITs files have to be dragged into the application, where instead it would be possible to connect the application directly to the server hosting the rest of the OzDES software pipeline and pulling data directly, without the generation of a FITs file.
+
+Thankfully, all of these areas for improvement are non-critical and do not impact the utilisation of my developed solution.
+
+
+
+
+
+
 
 \chapter{Conclusion}
 
- This is my conclusion
+This thesis report has detailed the creation of a web-based software application to be used for assisted and automated redshifting of a variety of astronomical objects.\\
 
+An analysis of prior literature showed that the majority of software implementations used a cross correlation based algorithm and lacked a visual interface, where the lack of interface made them unsuitable for use by the the OzDES cosmology team. The success of the $\chi^2$ algorithm in the Sloan Digital Sky Survey analysis prompted the initial creation of a simple $\chi^2$ matching algorithm in this thesis, however significant room for improvement pushed development focus back into cross correlation algorithms. The most successful cross correlation algorithm analysis, used by the IDL project AutoZ, served as a base for the cross correlation algorithm implemented in this thesis. Modifications were made to further improve matching, including the addition of a quasar specific algorithm branch.\\
 
+Algorithm performance was tested on both high signal-to-noise data from the 2dFLenS survey and low signal-to-noise data from the OzDES survey, with significant improvements over the currently used \runz{} software platform found with both data sets. When looking only at manually assigned redshifts at the 99\% confidence interval, the developed thesis algorithm was 97\% successful for high signal-to-noise data and 79\% successful for low signal-to-noise data. Compared with the best results of \runz{} for the same data sets, being 66\% and 32\% respectively, we see the rate of misclassification is 12 and 3.2 times lower when using the new algorithm for the two data sets.\\
 
+In terms of the application framework, the usage HTML5, AngularJS and Bootstrap allowed rapid construction of a familiar and intuitive interface, and seamless binding between the view and data controllers behind the scenes. The interface provides users with a settings screen, ability to view all templates loaded in the application, and has in built instructions on how to use the application. In addition, the two most used screens available to the user are the overview screen and the detailed screen, where the former presents a filterable, tabular or graphical display of all spectra in the loaded FITs file. The detailed screen allows users to verify or manually assign redshifts via spectral line marking. To assist with the redshifting process, users can smooth the spectrum, toggle continuum in the spectrum, chose whether to display spectrum variance or not, display specific templates and zoom in on points of interest in the spectrum graph. These features allow for easy and efficient redshifting of spectra by researchers, reducing the amount of time that has to be delegated to redshifting observation runs and allowing more time to be spent on data analysis and scientific research.\\
+
+With the advantages provided by a proper redshifting interface and superior matching algorithm, I believe this thesis project represents a viable alternative to the existing legacy code solution of \runz{} for use by the OzDES cosmology team.
 
 
 
