@@ -945,7 +945,7 @@ After this, to remove pixels that have variance far below their neighbours, the 
 v_i = \mathrm{max}\brac{v_i, 0.7\cdot \median\{v_{i-n}:v_{i+n}\}}.
 \end{align}
 
-After this variance adjustment, I divided the intensity spectrum by the variance spectrum. Whilst prior software such as AutoZ and literature (Saunders \etal \cite{saunders2004improvements}) recommends dividing by variance squared instead of simply the variance, consistent gains of approximately 5\% in matching rate were found using the linear method instead of squared. This division was done in order to down-weight pixels with greater variance, such that for all $s_i,\ s_i = s_i \cdot v_i$.
+After this variance adjustment, I divided the intensity spectrum by the variance spectrum. Prior software such as AutoZ and literature (Saunders \etal \cite{saunders2004improvements}) recommend dividing by variance, and this is done to the spectrum such that for all pixels, $s_i,\ s_i = s_i \cdot v_i$.
 
 This step was not implemented on the quasar template, as the variance in the error spectrum meant that diving by the variance polluted the broad peaks to such an extent that they were unmatchable. Instead, the quasar spectrum does not consider spectrum error, as the broadness of the peaks means that individual uncertainty on a pixel basis is unimportant to the final result.
 
